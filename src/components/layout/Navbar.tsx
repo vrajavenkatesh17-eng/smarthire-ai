@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Sparkles, ChevronDown } from "lucide-react";
+import { Menu, X, Sparkles, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const navLinks = [
@@ -65,9 +66,12 @@ const Navbar = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <Button variant="ghost" size="sm">
-                Log in
-              </Button>
+              <Link to="/dashboard">
+                <Button variant="ghost" size="sm" className="gap-2">
+                  <LayoutDashboard className="w-4 h-4" />
+                  Dashboard
+                </Button>
+              </Link>
             </motion.div>
             <motion.div
               initial={{ opacity: 0, x: 20 }}
@@ -146,9 +150,12 @@ const Navbar = () => {
                 transition={{ delay: 0.4 }}
                 className="flex flex-col gap-2 pt-4 border-t border-border mt-2"
               >
-                <Button variant="ghost" size="sm" className="justify-start">
-                  Log in
-                </Button>
+                <Link to="/dashboard" onClick={() => setIsOpen(false)}>
+                  <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
+                    <LayoutDashboard className="w-4 h-4" />
+                    Dashboard
+                  </Button>
+                </Link>
                 <Button variant="default" size="sm">
                   Get Started
                 </Button>
