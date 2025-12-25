@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Sparkles, LayoutDashboard } from "lucide-react";
+import { Menu, X, Sparkles, LayoutDashboard, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const navLinks = [
@@ -60,11 +60,23 @@ const Navbar = () => {
           </div>
 
           {/* CTA Buttons */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-3">
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3 }}
+            >
+              <Link to="/resume-analyzer">
+                <Button variant="ghost" size="sm" className="gap-2">
+                  <FileText className="w-4 h-4" />
+                  Analyze Resume
+                </Button>
+              </Link>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.35 }}
             >
               <Link to="/dashboard">
                 <Button variant="ghost" size="sm" className="gap-2">
@@ -150,6 +162,12 @@ const Navbar = () => {
                 transition={{ delay: 0.4 }}
                 className="flex flex-col gap-2 pt-4 border-t border-border mt-2"
               >
+                <Link to="/resume-analyzer" onClick={() => setIsOpen(false)}>
+                  <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
+                    <FileText className="w-4 h-4" />
+                    Analyze Resume
+                  </Button>
+                </Link>
                 <Link to="/dashboard" onClick={() => setIsOpen(false)}>
                   <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
                     <LayoutDashboard className="w-4 h-4" />
