@@ -1,0 +1,7 @@
+project_id = "fenwpejwqpeiiukageur"
+
+[functions.hr-chat]
+verify_jwt = false
+
+[functions.analyze-resume]
+verify_jwt = false

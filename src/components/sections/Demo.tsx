@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, User, Loader2, Sparkles, MessageCircle } from "lucide-react";
+import { Send, Bot, User, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { streamChat } from "@/lib/streamChat";
 
 interface Message {
   role: "user" | "assistant";
@@ -36,12 +37,11 @@ const Demo = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hello! I'm your AI HR assistant. I can help you with resume screening, candidate evaluation, interview questions, and hiring insights. Try asking me something!",
+      content: "Hello! I'm your AI HR assistant powered by advanced NLP. I can help you with resume screening, candidate evaluation, interview questions, and hiring insights. Try asking me something!",
     },
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -58,90 +58,36 @@ const Demo = () => {
 
     const userMessage = input.trim();
     setInput("");
-    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+    const userMsg: Message = { role: "user", content: userMessage };
+    setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
-    setIsTyping(true);
 
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      
-      const demoResponse = generateDemoResponse(userMessage);
-      setIsTyping(false);
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: demoResponse },
-      ]);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to get response. Please try again.",
-        variant: "destructive",
+    let assistantContent = "";
+
+    const updateAssistant = (chunk: string) => {
+      assistantContent += chunk;
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        if (last?.role === "assistant" && prev.length > 1 && prev[prev.length - 2].content === userMessage) {
+          return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantContent } : m));
+        }
+        return [...prev, { role: "assistant", content: assistantContent }];
       });
-    } finally {
-      setIsLoading(false);
-      setIsTyping(false);
-    }
-  };
+    };
 
-  const generateDemoResponse = (query: string): string => {
-    const lowerQuery = query.toLowerCase();
-    
-    if (lowerQuery.includes("interview") && lowerQuery.includes("question")) {
-      return `Here are tailored interview questions based on your query:
-
-**Technical Assessment:**
-1. "Can you walk me through a challenging project you've worked on and the technical decisions you made?"
-2. "How do you approach debugging a complex issue in production?"
-
-**Behavioral Questions:**
-3. "Tell me about a time you had to collaborate with a difficult team member."
-4. "How do you prioritize when you have multiple urgent deadlines?"
-
-**Culture Fit:**
-5. "What kind of work environment helps you do your best work?"
-
-Would you like me to generate more specific questions for a particular role?`;
-    }
-    
-    if (lowerQuery.includes("candidate") || lowerQuery.includes("resume")) {
-      return `I can help analyze candidates! Here's what I typically evaluate:
-
-📊 **Skills Match Score:** How well skills align with requirements
-👤 **Experience Level:** Relevance and depth of experience  
-🎓 **Education & Certifications:** Relevant qualifications
-💡 **Growth Potential:** Career trajectory indicators
-🤝 **Culture Fit Signals:** Team collaboration indicators
-
-To analyze a specific candidate, you can:
-1. Paste the resume text
-2. Upload a resume file (via the Upload feature)
-3. Describe the candidate's background
-
-What would you like me to help with?`;
-    }
-    
-    if (lowerQuery.includes("job description") || lowerQuery.includes("improve")) {
-      return `Great question! Here are key elements for an effective job description:
-
-✅ **Clear Title:** Use standard, searchable job titles
-✅ **Compelling Summary:** 2-3 sentences on impact and opportunity
-✅ **Specific Requirements:** Separate "must-haves" from "nice-to-haves"
-✅ **Growth Opportunities:** Career path and learning possibilities
-✅ **Culture Highlights:** What makes your team unique
-✅ **Inclusive Language:** Avoid gendered or exclusionary terms
-
-Would you like me to review a specific job description?`;
-    }
-    
-    return `Thanks for your question! As an AI HR assistant, I can help with:
-
-🔍 **Resume Screening** — Analyze and rank candidates
-📝 **Interview Prep** — Generate tailored questions
-📊 **Candidate Comparison** — Side-by-side evaluations
-✍️ **Job Descriptions** — Optimize for better applicants
-📈 **Hiring Insights** — Data-driven recommendations
-
-What specific HR task would you like help with today?`;
+    await streamChat({
+      messages: [...messages, userMsg],
+      onDelta: updateAssistant,
+      onDone: () => setIsLoading(false),
+      onError: (error) => {
+        setIsLoading(false);
+        toast({
+          title: "Error",
+          description: error,
+          variant: "destructive",
+        });
+      },
+    });
   };
 
   const handleSuggestedPrompt = (prompt: string) => {
@@ -218,7 +164,7 @@ What specific HR task would you like help with today?`;
                     transition={{ duration: 2, repeat: Infinity }}
                     className="w-2 h-2 bg-success rounded-full"
                   />
-                  <p className="text-xs text-muted-foreground">Online • Powered by NLP</p>
+                  <p className="text-xs text-muted-foreground">Online • Powered by Lovable AI</p>
                 </div>
               </div>
             </div>
@@ -274,7 +220,7 @@ What specific HR task would you like help with today?`;
               
               {/* Typing indicator */}
               <AnimatePresence>
-                {isTyping && (
+                {isLoading && messages[messages.length - 1]?.role === "user" && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
