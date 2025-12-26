@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Sparkles, LayoutDashboard, FileText } from "lucide-react";
+import { Menu, X, Sparkles, LayoutDashboard, FileText, LogIn, LogOut, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
 const navLinks = [
   { label: "Features", href: "#features" },
@@ -13,6 +14,7 @@ const navLinks = [
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, signOut } = useAuth();
 
   return (
     <motion.nav 
@@ -73,6 +75,20 @@ const Navbar = () => {
                 </Button>
               </Link>
             </motion.div>
+            {user && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.33 }}
+              >
+                <Link to="/resume-history">
+                  <Button variant="ghost" size="sm" className="gap-2">
+                    <History className="w-4 h-4" />
+                    History
+                  </Button>
+                </Link>
+              </motion.div>
+            )}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -92,9 +108,19 @@ const Navbar = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <Button variant="default" size="sm">
-                Get Started
-              </Button>
+              {user ? (
+                <Button variant="outline" size="sm" className="gap-2" onClick={() => signOut()}>
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </Button>
+              ) : (
+                <Link to="/auth">
+                  <Button variant="default" size="sm" className="gap-2">
+                    <LogIn className="w-4 h-4" />
+                    Sign In
+                  </Button>
+                </Link>
+              )}
             </motion.div>
           </div>
 
@@ -168,15 +194,33 @@ const Navbar = () => {
                     Analyze Resume
                   </Button>
                 </Link>
+                {user && (
+                  <Link to="/resume-history" onClick={() => setIsOpen(false)}>
+                    <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
+                      <History className="w-4 h-4" />
+                      History
+                    </Button>
+                  </Link>
+                )}
                 <Link to="/dashboard" onClick={() => setIsOpen(false)}>
                   <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
                     <LayoutDashboard className="w-4 h-4" />
                     Dashboard
                   </Button>
                 </Link>
-                <Button variant="default" size="sm">
-                  Get Started
-                </Button>
+                {user ? (
+                  <Button variant="outline" size="sm" className="gap-2" onClick={() => { signOut(); setIsOpen(false); }}>
+                    <LogOut className="w-4 h-4" />
+                    Sign Out
+                  </Button>
+                ) : (
+                  <Link to="/auth" onClick={() => setIsOpen(false)}>
+                    <Button variant="default" size="sm" className="w-full gap-2">
+                      <LogIn className="w-4 h-4" />
+                      Sign In
+                    </Button>
+                  </Link>
+                )}
               </motion.div>
             </div>
           </motion.div>

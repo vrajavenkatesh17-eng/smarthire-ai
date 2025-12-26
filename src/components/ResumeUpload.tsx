@@ -1,9 +1,11 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, FileText, X, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Upload, FileText, X, Loader2, CheckCircle2, AlertCircle, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { streamChat } from "@/lib/streamChat";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ResumeUploadProps {
   onAnalysisComplete?: (analysis: string) => void;
@@ -13,9 +15,12 @@ const ResumeUpload = ({ onAnalysisComplete }: ResumeUploadProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [analysis, setAnalysis] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [isSaved, setIsSaved] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -193,6 +198,52 @@ B.S. Computer Science | University of Technology | 2017
     setFile(null);
     setAnalysis("");
     setError("");
+    setIsSaved(false);
+  };
+
+  const saveAnalysis = async () => {
+    if (!user || !file || !analysis) {
+      toast({
+        title: "Cannot Save",
+        description: user ? "No analysis to save" : "Please sign in to save analyses",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      // Extract candidate name from analysis if possible
+      const nameMatch = analysis.match(/(?:Name|Candidate):\s*([^\n]+)/i);
+      const emailMatch = analysis.match(/(?:Email):\s*([^\n]+)/i);
+      const scoreMatch = analysis.match(/(?:Score|Rating):\s*(\d+)/i);
+
+      const { error: saveError } = await supabase.from("analyzed_resumes").insert({
+        user_id: user.id,
+        file_name: file.name,
+        candidate_name: nameMatch?.[1]?.trim() || null,
+        candidate_email: emailMatch?.[1]?.trim() || null,
+        analysis_result: analysis,
+        ai_score: scoreMatch ? parseInt(scoreMatch[1]) : null,
+      });
+
+      if (saveError) throw saveError;
+
+      setIsSaved(true);
+      toast({
+        title: "Saved",
+        description: "Analysis saved to your history",
+      });
+    } catch (err) {
+      toast({
+        title: "Save Failed",
+        description: "Could not save analysis",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -310,13 +361,32 @@ B.S. Computer Science | University of Technology | 2017
             exit={{ opacity: 0, y: 20 }}
             className="bg-card border border-border rounded-2xl p-6"
           >
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                <FileText className="w-4 h-4 text-primary" />
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <FileText className="w-4 h-4 text-primary" />
+                </div>
+                <h3 className="font-semibold text-foreground">AI Analysis</h3>
+                {isAnalyzing && (
+                  <Loader2 className="w-4 h-4 text-primary animate-spin" />
+                )}
               </div>
-              <h3 className="font-semibold text-foreground">AI Analysis</h3>
-              {isAnalyzing && (
-                <Loader2 className="w-4 h-4 text-primary animate-spin ml-auto" />
+              {analysis && !isAnalyzing && (
+                <Button
+                  variant={isSaved ? "outline" : "default"}
+                  size="sm"
+                  onClick={saveAnalysis}
+                  disabled={isSaving || isSaved || !user}
+                >
+                  {isSaving ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : isSaved ? (
+                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                  ) : (
+                    <Save className="w-4 h-4 mr-2" />
+                  )}
+                  {isSaved ? "Saved" : user ? "Save Analysis" : "Sign in to Save"}
+                </Button>
               )}
             </div>
             <div className="prose prose-sm max-w-none text-foreground">
