@@ -1,8 +1,12 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Sparkles, FileText, Zap, Shield, BarChart3 } from "lucide-react";
+import { ArrowLeft, Sparkles, FileText, Zap, Shield, BarChart3, Files } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ResumeUpload from "@/components/ResumeUpload";
+import BulkResumeUpload from "@/components/BulkResumeUpload";
+import { useAuth } from "@/hooks/useAuth";
 
 const features = [
   {
@@ -23,6 +27,8 @@ const features = [
 ];
 
 const ResumeAnalyzer = () => {
+  const { user } = useAuth();
+  
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -49,11 +55,20 @@ const ResumeAnalyzer = () => {
                 </div>
               </div>
             </div>
-            <Link to="/dashboard">
-              <Button variant="outline" size="sm">
-                View Dashboard
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              {user && (
+                <Link to="/resume-history">
+                  <Button variant="outline" size="sm">
+                    View History
+                  </Button>
+                </Link>
+              )}
+              <Link to="/dashboard">
+                <Button variant="outline" size="sm">
+                  Dashboard
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </motion.header>
@@ -108,13 +123,30 @@ const ResumeAnalyzer = () => {
             ))}
           </motion.div>
 
-          {/* Upload Component */}
+          {/* Upload Component with Tabs */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
           >
-            <ResumeUpload />
+            <Tabs defaultValue="single" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="single" className="gap-2">
+                  <FileText className="w-4 h-4" />
+                  Single Resume
+                </TabsTrigger>
+                <TabsTrigger value="bulk" className="gap-2">
+                  <Files className="w-4 h-4" />
+                  Bulk Upload
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="single">
+                <ResumeUpload />
+              </TabsContent>
+              <TabsContent value="bulk">
+                <BulkResumeUpload />
+              </TabsContent>
+            </Tabs>
           </motion.div>
 
           {/* Tips */}
