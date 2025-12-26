@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.analyze-resume]
 verify_jwt = false
+
+[functions.send-analysis-notification]
+verify_jwt = false
