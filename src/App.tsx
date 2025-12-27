@@ -10,6 +10,7 @@ import ResumeAnalyzer from "./pages/ResumeAnalyzer";
 import ResumeHistory from "./pages/ResumeHistory";
 import JobMatching from "./pages/JobMatching";
 import CandidateComparison from "./pages/CandidateComparison";
+import TalentPipeline from "./pages/TalentPipeline";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/resume-history" element={<ResumeHistory />} />
             <Route path="/job-matching" element={<JobMatching />} />
             <Route path="/compare-candidates" element={<CandidateComparison />} />
+            <Route path="/talent-pipeline" element={<TalentPipeline />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

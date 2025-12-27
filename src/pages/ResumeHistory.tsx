@@ -255,6 +255,12 @@ const ResumeHistory = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Link to="/talent-pipeline">
+                <Button variant="outline" size="sm">
+                  <Users className="w-4 h-4 mr-2" />
+                  Pipeline
+                </Button>
+              </Link>
               <Link to="/job-matching">
                 <Button variant="outline" size="sm">
                   <Briefcase className="w-4 h-4 mr-2" />

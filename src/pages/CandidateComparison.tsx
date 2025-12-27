@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Users, Loader2, CheckCircle2, X } from "lucide-react";
+import { ArrowLeft, Users, Loader2, CheckCircle2, X, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { ScheduleInterviewDialog } from "@/components/ScheduleInterviewDialog";
 
 interface AnalyzedResume {
   id: string;
@@ -274,7 +275,7 @@ const CandidateComparison = () => {
 
                   {/* Strengths */}
                   {strengths.length > 0 && (
-                    <div>
+                    <div className="mb-4">
                       <h4 className="text-xs font-semibold text-foreground mb-2">Top Strengths</h4>
                       <ul className="space-y-1">
                         {strengths.slice(0, 3).map((strength, i) => (
@@ -285,6 +286,22 @@ const CandidateComparison = () => {
                         ))}
                       </ul>
                     </div>
+                  )}
+
+                  {/* Schedule Interview Button */}
+                  {user && (
+                    <ScheduleInterviewDialog
+                      candidateName={resume.candidate_name || resume.file_name}
+                      candidateEmail={resume.candidate_email}
+                      resumeId={resume.id}
+                      userId={user.id}
+                      trigger={
+                        <Button variant="outline" size="sm" className="w-full">
+                          <Calendar className="w-4 h-4 mr-2" />
+                          Schedule Interview
+                        </Button>
+                      }
+                    />
                   )}
                 </motion.div>
               );
