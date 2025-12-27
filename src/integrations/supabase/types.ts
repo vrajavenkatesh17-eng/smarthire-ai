@@ -47,6 +47,103 @@ export type Database = {
         }
         Relationships: []
       }
+      candidate_pipeline: {
+        Row: {
+          candidate_email: string | null
+          candidate_name: string
+          created_at: string
+          id: string
+          notes: string | null
+          resume_id: string | null
+          stage: Database["public"]["Enums"]["candidate_stage"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          candidate_email?: string | null
+          candidate_name: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          resume_id?: string | null
+          stage?: Database["public"]["Enums"]["candidate_stage"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          candidate_email?: string | null
+          candidate_name?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          resume_id?: string | null
+          stage?: Database["public"]["Enums"]["candidate_stage"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_pipeline_resume_id_fkey"
+            columns: ["resume_id"]
+            isOneToOne: false
+            referencedRelation: "analyzed_resumes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      interviews: {
+        Row: {
+          created_at: string
+          duration_minutes: number
+          id: string
+          interview_type: string
+          interviewer_name: string | null
+          location: string | null
+          notes: string | null
+          pipeline_id: string | null
+          scheduled_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          interview_type?: string
+          interviewer_name?: string | null
+          location?: string | null
+          notes?: string | null
+          pipeline_id?: string | null
+          scheduled_at: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          interview_type?: string
+          interviewer_name?: string | null
+          location?: string | null
+          notes?: string | null
+          pipeline_id?: string | null
+          scheduled_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interviews_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "candidate_pipeline"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -82,7 +179,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      candidate_stage:
+        | "new"
+        | "screening"
+        | "interview_scheduled"
+        | "interviewed"
+        | "offer"
+        | "hired"
+        | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -209,6 +313,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      candidate_stage: [
+        "new",
+        "screening",
+        "interview_scheduled",
+        "interviewed",
+        "offer",
+        "hired",
+        "rejected",
+      ],
+    },
   },
 } as const
