@@ -1,13 +1,19 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, FileText, Trash2, Clock, Loader2, Search, SlidersHorizontal, ArrowUpDown } from "lucide-react";
+import { 
+  ArrowLeft, FileText, Trash2, Clock, Loader2, Search, 
+  SlidersHorizontal, ArrowUpDown, Download, Users, Briefcase,
+  FileDown, CheckSquare, Square
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { exportToCSV, exportToPDF, exportSingleResumeToPDF } from "@/lib/exportUtils";
 
 interface AnalyzedResume {
   id: string;
@@ -29,6 +35,7 @@ const ResumeHistory = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOption, setSortOption] = useState<SortOption>("date-desc");
   const [scoreFilter, setScoreFilter] = useState<ScoreFilter>("all");
+  const [selectedForExport, setSelectedForExport] = useState<Set<string>>(new Set());
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -76,6 +83,11 @@ const ResumeHistory = () => {
 
       setResumes(resumes.filter((r) => r.id !== id));
       if (selectedResume?.id === id) setSelectedResume(null);
+      setSelectedForExport(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
 
       toast({
         title: "Deleted",
@@ -100,10 +112,65 @@ const ResumeHistory = () => {
     });
   };
 
+  const toggleExportSelection = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedForExport(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const selectAllForExport = () => {
+    if (selectedForExport.size === filteredAndSortedResumes.length) {
+      setSelectedForExport(new Set());
+    } else {
+      setSelectedForExport(new Set(filteredAndSortedResumes.map(r => r.id)));
+    }
+  };
+
+  const handleExportCSV = () => {
+    const toExport = selectedForExport.size > 0
+      ? resumes.filter(r => selectedForExport.has(r.id))
+      : filteredAndSortedResumes;
+    exportToCSV(toExport);
+    toast({
+      title: "Exported",
+      description: `Exported ${toExport.length} resumes to CSV`,
+    });
+  };
+
+  const handleExportPDF = () => {
+    const toExport = selectedForExport.size > 0
+      ? resumes.filter(r => selectedForExport.has(r.id))
+      : filteredAndSortedResumes;
+    exportToPDF(toExport);
+    toast({
+      title: "Exporting",
+      description: `Generating PDF for ${toExport.length} resumes`,
+    });
+  };
+
+  const handleCompareSelected = () => {
+    if (selectedForExport.size < 2) {
+      toast({
+        title: "Select more candidates",
+        description: "Please select at least 2 candidates to compare",
+        variant: "destructive",
+      });
+      return;
+    }
+    const ids = Array.from(selectedForExport).join(",");
+    navigate(`/compare-candidates?ids=${ids}`);
+  };
+
   const filteredAndSortedResumes = useMemo(() => {
     let filtered = resumes;
 
-    // Apply search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -114,7 +181,6 @@ const ResumeHistory = () => {
       );
     }
 
-    // Apply score filter
     switch (scoreFilter) {
       case "90+":
         filtered = filtered.filter((r) => r.ai_score && r.ai_score >= 90);
@@ -130,7 +196,6 @@ const ResumeHistory = () => {
         break;
     }
 
-    // Apply sorting
     return filtered.sort((a, b) => {
       switch (sortOption) {
         case "date-desc":
@@ -189,9 +254,17 @@ const ResumeHistory = () => {
                 </div>
               </div>
             </div>
-            <Link to="/resume-analyzer">
-              <Button>Analyze New Resume</Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link to="/job-matching">
+                <Button variant="outline" size="sm">
+                  <Briefcase className="w-4 h-4 mr-2" />
+                  Job Match
+                </Button>
+              </Link>
+              <Link to="/resume-analyzer">
+                <Button size="sm">Analyze New</Button>
+              </Link>
+            </div>
           </div>
         </div>
       </motion.header>
@@ -219,7 +292,7 @@ const ResumeHistory = () => {
           </motion.div>
         ) : (
           <>
-            {/* Filters */}
+            {/* Filters & Actions */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -234,7 +307,7 @@ const ResumeHistory = () => {
                   className="pl-10"
                 />
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Select value={scoreFilter} onValueChange={(v) => setScoreFilter(v as ScoreFilter)}>
                   <SelectTrigger className="w-[140px]">
                     <SlidersHorizontal className="w-4 h-4 mr-2" />
@@ -262,8 +335,58 @@ const ResumeHistory = () => {
                     <SelectItem value="name-desc">Name (Z-A)</SelectItem>
                   </SelectContent>
                 </Select>
+                
+                {/* Export & Compare Actions */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <Download className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handleExportCSV}>
+                      <FileDown className="w-4 h-4 mr-2" />
+                      Export to CSV
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleExportPDF}>
+                      <FileText className="w-4 h-4 mr-2" />
+                      Export to PDF
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  onClick={handleCompareSelected}
+                  disabled={selectedForExport.size < 2}
+                  title="Compare selected candidates"
+                >
+                  <Users className="w-4 h-4" />
+                </Button>
               </div>
             </motion.div>
+
+            {/* Selection bar */}
+            {selectedForExport.size > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-primary/10 border border-primary/30 rounded-xl p-3 mb-4 flex items-center justify-between"
+              >
+                <span className="text-sm text-foreground">
+                  {selectedForExport.size} selected
+                </span>
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedForExport(new Set())}>
+                    Clear
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={selectAllForExport}>
+                    {selectedForExport.size === filteredAndSortedResumes.length ? "Deselect All" : "Select All"}
+                  </Button>
+                </div>
+              </motion.div>
+            )}
 
             <div className="grid lg:grid-cols-3 gap-6">
               {/* Resume List */}
@@ -288,9 +411,16 @@ const ResumeHistory = () => {
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 bg-secondary rounded-lg flex items-center justify-center shrink-0">
-                            <FileText className="w-5 h-5 text-primary" />
-                          </div>
+                          <button
+                            onClick={(e) => toggleExportSelection(resume.id, e)}
+                            className="mt-0.5 text-muted-foreground hover:text-primary"
+                          >
+                            {selectedForExport.has(resume.id) ? (
+                              <CheckSquare className="w-5 h-5 text-primary" />
+                            ) : (
+                              <Square className="w-5 h-5" />
+                            )}
+                          </button>
                           <div className="min-w-0">
                             <p className="font-medium text-foreground truncate">
                               {resume.candidate_name || resume.file_name}
@@ -338,18 +468,28 @@ const ResumeHistory = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="bg-card border border-border rounded-2xl p-6"
                   >
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                        <FileText className="w-5 h-5 text-primary" />
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                          <FileText className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                          <h2 className="font-semibold text-foreground">
+                            {selectedResume.candidate_name || selectedResume.file_name}
+                          </h2>
+                          <p className="text-sm text-muted-foreground">
+                            Analyzed on {formatDate(selectedResume.created_at)}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h2 className="font-semibold text-foreground">
-                          {selectedResume.candidate_name || selectedResume.file_name}
-                        </h2>
-                        <p className="text-sm text-muted-foreground">
-                          Analyzed on {formatDate(selectedResume.created_at)}
-                        </p>
-                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => exportSingleResumeToPDF(selectedResume)}
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Export PDF
+                      </Button>
                     </div>
 
                     <div className="prose prose-sm max-w-none text-foreground">
