@@ -47,6 +47,51 @@ export type Database = {
         }
         Relationships: []
       }
+      candidate_notes: {
+        Row: {
+          candidate_id: string
+          created_at: string
+          id: string
+          note: string
+          team_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          candidate_id: string
+          created_at?: string
+          id?: string
+          note: string
+          team_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          candidate_id?: string
+          created_at?: string
+          id?: string
+          note?: string
+          team_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_notes_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidate_pipeline"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_notes_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       candidate_pipeline: {
         Row: {
           candidate_email: string | null
@@ -56,6 +101,7 @@ export type Database = {
           notes: string | null
           resume_id: string | null
           stage: Database["public"]["Enums"]["candidate_stage"]
+          team_id: string | null
           updated_at: string
           user_id: string
         }
@@ -67,6 +113,7 @@ export type Database = {
           notes?: string | null
           resume_id?: string | null
           stage?: Database["public"]["Enums"]["candidate_stage"]
+          team_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -78,6 +125,7 @@ export type Database = {
           notes?: string | null
           resume_id?: string | null
           stage?: Database["public"]["Enums"]["candidate_stage"]
+          team_id?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -87,6 +135,61 @@ export type Database = {
             columns: ["resume_id"]
             isOneToOne: false
             referencedRelation: "analyzed_resumes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_pipeline_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      candidate_ratings: {
+        Row: {
+          candidate_id: string
+          category: string
+          created_at: string
+          id: string
+          rating: number
+          team_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          candidate_id: string
+          category?: string
+          created_at?: string
+          id?: string
+          rating: number
+          team_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          candidate_id?: string
+          category?: string
+          created_at?: string
+          id?: string
+          rating?: number
+          team_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_ratings_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidate_pipeline"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_ratings_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -171,12 +274,71 @@ export type Database = {
         }
         Relationships: []
       }
+      team_memberships: {
+        Row: {
+          created_at: string
+          id: string
+          role: string
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: string
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: string
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_memberships_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_team_member: {
+        Args: { _team_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       candidate_stage:

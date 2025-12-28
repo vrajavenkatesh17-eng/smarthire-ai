@@ -11,6 +11,7 @@ import ResumeHistory from "./pages/ResumeHistory";
 import JobMatching from "./pages/JobMatching";
 import CandidateComparison from "./pages/CandidateComparison";
 import TalentPipeline from "./pages/TalentPipeline";
+import Teams from "./pages/Teams";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/job-matching" element={<JobMatching />} />
             <Route path="/compare-candidates" element={<CandidateComparison />} />
             <Route path="/talent-pipeline" element={<TalentPipeline />} />
+            <Route path="/teams" element={<Teams />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

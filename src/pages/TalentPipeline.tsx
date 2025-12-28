@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, Users, Loader2, Plus, Calendar, MoreVertical,
-  ChevronRight, UserPlus, Clock, CheckCircle, XCircle, Briefcase
+  ChevronRight, UserPlus, Clock, CheckCircle, XCircle, Briefcase, MessageSquare, Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -15,6 +15,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
+import { CandidateNotes } from "@/components/collaboration/CandidateNotes";
+import { CandidateRatings } from "@/components/collaboration/CandidateRatings";
 
 type CandidateStage = "new" | "screening" | "interview_scheduled" | "interviewed" | "offer" | "hired" | "rejected";
 
@@ -28,6 +31,7 @@ interface PipelineCandidate {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  team_id: string | null;
 }
 
 interface Interview {
@@ -57,10 +61,23 @@ const TalentPipeline = () => {
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [newCandidate, setNewCandidate] = useState({ name: "", email: "", notes: "" });
+  const [candidateDetailsOpen, setCandidateDetailsOpen] = useState(false);
+  const [selectedCandidate, setSelectedCandidate] = useState<PipelineCandidate | null>(null);
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [newCandidate, setNewCandidate] = useState({ name: "", email: "", notes: "", teamId: "" });
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const { data: teams } = useQuery({
+    queryKey: ["teams"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("teams").select("*");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -107,17 +124,24 @@ const TalentPipeline = () => {
         candidate_email: newCandidate.email || null,
         notes: newCandidate.notes || null,
         stage: "new" as CandidateStage,
+        team_id: newCandidate.teamId || null,
       }).select().single();
 
       if (error) throw error;
 
       setCandidates([data, ...candidates]);
-      setNewCandidate({ name: "", email: "", notes: "" });
+      setNewCandidate({ name: "", email: "", notes: "", teamId: "" });
       setAddDialogOpen(false);
       toast({ title: "Added", description: "Candidate added to pipeline" });
     } catch (error) {
       toast({ title: "Error", description: "Failed to add candidate", variant: "destructive" });
     }
+  };
+
+  const openCandidateDetails = (candidate: PipelineCandidate) => {
+    setSelectedCandidate(candidate);
+    setSelectedTeamId(candidate.team_id);
+    setCandidateDetailsOpen(true);
   };
 
   const updateStage = async (candidateId: string, newStage: CandidateStage) => {
@@ -190,49 +214,75 @@ const TalentPipeline = () => {
                 </div>
               </div>
             </div>
-            <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Candidate
+            <div className="flex gap-2">
+              <Link to="/teams">
+                <Button variant="outline">
+                  <Users className="w-4 h-4 mr-2" />
+                  Manage Teams
                 </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add Candidate to Pipeline</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 pt-4">
-                  <div>
-                    <Label>Name *</Label>
-                    <Input
-                      value={newCandidate.name}
-                      onChange={(e) => setNewCandidate({ ...newCandidate, name: e.target.value })}
-                      placeholder="Candidate name"
-                    />
-                  </div>
-                  <div>
-                    <Label>Email</Label>
-                    <Input
-                      type="email"
-                      value={newCandidate.email}
-                      onChange={(e) => setNewCandidate({ ...newCandidate, email: e.target.value })}
-                      placeholder="email@example.com"
-                    />
-                  </div>
-                  <div>
-                    <Label>Notes</Label>
-                    <Textarea
-                      value={newCandidate.notes}
-                      onChange={(e) => setNewCandidate({ ...newCandidate, notes: e.target.value })}
-                      placeholder="Initial notes about the candidate..."
-                    />
-                  </div>
-                  <Button onClick={addCandidate} className="w-full" disabled={!newCandidate.name.trim()}>
-                    Add to Pipeline
+              </Link>
+              <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Candidate
                   </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add Candidate to Pipeline</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-4">
+                    <div>
+                      <Label>Name *</Label>
+                      <Input
+                        value={newCandidate.name}
+                        onChange={(e) => setNewCandidate({ ...newCandidate, name: e.target.value })}
+                        placeholder="Candidate name"
+                      />
+                    </div>
+                    <div>
+                      <Label>Email</Label>
+                      <Input
+                        type="email"
+                        value={newCandidate.email}
+                        onChange={(e) => setNewCandidate({ ...newCandidate, email: e.target.value })}
+                        placeholder="email@example.com"
+                      />
+                    </div>
+                    <div>
+                      <Label>Team (for collaboration)</Label>
+                      <Select 
+                        value={newCandidate.teamId} 
+                        onValueChange={(value) => setNewCandidate({ ...newCandidate, teamId: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a team (optional)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {teams?.map((team) => (
+                            <SelectItem key={team.id} value={team.id}>
+                              {team.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Notes</Label>
+                      <Textarea
+                        value={newCandidate.notes}
+                        onChange={(e) => setNewCandidate({ ...newCandidate, notes: e.target.value })}
+                        placeholder="Initial notes about the candidate..."
+                      />
+                    </div>
+                    <Button onClick={addCandidate} className="w-full" disabled={!newCandidate.name.trim()}>
+                      Add to Pipeline
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </div>
       </motion.header>
@@ -293,7 +343,8 @@ const TalentPipeline = () => {
                   {stageCandidates.map((candidate) => (
                     <div
                       key={candidate.id}
-                      className="bg-secondary/50 rounded-lg p-3 group"
+                      className="bg-secondary/50 rounded-lg p-3 group cursor-pointer hover:bg-secondary/70 transition-colors"
+                      onClick={() => openCandidateDetails(candidate)}
                     >
                       <div className="flex items-start justify-between">
                         <div className="min-w-0 flex-1">
@@ -305,23 +356,40 @@ const TalentPipeline = () => {
                               {candidate.candidate_email}
                             </p>
                           )}
+                          {candidate.team_id && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <Users className="w-3 h-3 text-primary" />
+                              <span className="text-xs text-primary">Team</span>
+                            </div>
+                          )}
                         </div>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <MoreVertical className="w-3 h-3" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             {STAGES.filter(s => s.key !== stage.key).map((s) => (
-                              <DropdownMenuItem key={s.key} onClick={() => updateStage(candidate.id, s.key)}>
+                              <DropdownMenuItem key={s.key} onClick={(e) => {
+                                e.stopPropagation();
+                                updateStage(candidate.id, s.key);
+                              }}>
                                 <ChevronRight className="w-3 h-3 mr-2" />
                                 Move to {s.label}
                               </DropdownMenuItem>
                             ))}
                             <DropdownMenuItem 
                               className="text-destructive"
-                              onClick={() => deleteCandidate(candidate.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteCandidate(candidate.id);
+                              }}
                             >
                               Remove
                             </DropdownMenuItem>
@@ -335,6 +403,44 @@ const TalentPipeline = () => {
             );
           })}
         </div>
+
+        {/* Candidate Details Dialog with Notes & Ratings */}
+        <Dialog open={candidateDetailsOpen} onOpenChange={setCandidateDetailsOpen}>
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {selectedCandidate?.candidate_name}
+                {selectedCandidate?.team_id && (
+                  <span className="text-sm font-normal text-primary flex items-center gap-1">
+                    <Users className="w-4 h-4" /> Team Collaboration
+                  </span>
+                )}
+              </DialogTitle>
+            </DialogHeader>
+            {selectedCandidate && selectedTeamId ? (
+              <div className="grid gap-4 md:grid-cols-2 pt-4">
+                <CandidateNotes 
+                  candidateId={selectedCandidate.id} 
+                  teamId={selectedTeamId} 
+                />
+                <CandidateRatings 
+                  candidateId={selectedCandidate.id} 
+                  teamId={selectedTeamId} 
+                />
+              </div>
+            ) : selectedCandidate ? (
+              <div className="py-8 text-center">
+                <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground mb-2">
+                  This candidate is not associated with a team.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Assign a team to enable collaborative notes and ratings.
+                </p>
+              </div>
+            ) : null}
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
