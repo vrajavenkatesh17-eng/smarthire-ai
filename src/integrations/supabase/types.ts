@@ -194,6 +194,75 @@ export type Database = {
           },
         ]
       }
+      interview_feedback: {
+        Row: {
+          additional_notes: string | null
+          areas_for_improvement: string | null
+          communication: number | null
+          created_at: string
+          culture_fit: number | null
+          experience_relevance: number | null
+          id: string
+          interview_id: string
+          problem_solving: number | null
+          recommendation: string
+          strengths: string | null
+          team_id: string | null
+          technical_skills: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          additional_notes?: string | null
+          areas_for_improvement?: string | null
+          communication?: number | null
+          created_at?: string
+          culture_fit?: number | null
+          experience_relevance?: number | null
+          id?: string
+          interview_id: string
+          problem_solving?: number | null
+          recommendation: string
+          strengths?: string | null
+          team_id?: string | null
+          technical_skills?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          additional_notes?: string | null
+          areas_for_improvement?: string | null
+          communication?: number | null
+          created_at?: string
+          culture_fit?: number | null
+          experience_relevance?: number | null
+          id?: string
+          interview_id?: string
+          problem_solving?: number | null
+          recommendation?: string
+          strengths?: string | null
+          team_id?: string | null
+          technical_skills?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interview_feedback_interview_id_fkey"
+            columns: ["interview_id"]
+            isOneToOne: false
+            referencedRelation: "interviews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interview_feedback_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       interviews: {
         Row: {
           created_at: string

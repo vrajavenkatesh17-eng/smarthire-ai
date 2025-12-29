@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, Users, Loader2, Plus, Calendar, MoreVertical,
-  ChevronRight, UserPlus, Clock, CheckCircle, XCircle, Briefcase, MessageSquare, Star
+  ChevronRight, UserPlus, Clock, CheckCircle, XCircle, Briefcase, MessageSquare, Star, ClipboardList
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -12,12 +12,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { CandidateNotes } from "@/components/collaboration/CandidateNotes";
 import { CandidateRatings } from "@/components/collaboration/CandidateRatings";
+import { CalendarExportMenu } from "@/components/CalendarExportMenu";
+import { InterviewFeedbackForm } from "@/components/InterviewFeedbackForm";
+import { InterviewFeedbackSummary } from "@/components/InterviewFeedbackSummary";
 
 type CandidateStage = "new" | "screening" | "interview_scheduled" | "interviewed" | "offer" | "hired" | "rejected";
 
@@ -64,6 +68,8 @@ const TalentPipeline = () => {
   const [candidateDetailsOpen, setCandidateDetailsOpen] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState<PipelineCandidate | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [selectedInterviewId, setSelectedInterviewId] = useState<string | null>(null);
+  const [interviewDetailsOpen, setInterviewDetailsOpen] = useState(false);
   const [newCandidate, setNewCandidate] = useState({ name: "", email: "", notes: "", teamId: "" });
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -142,6 +148,13 @@ const TalentPipeline = () => {
     setSelectedCandidate(candidate);
     setSelectedTeamId(candidate.team_id);
     setCandidateDetailsOpen(true);
+  };
+
+  const openInterviewDetails = (interview: Interview, candidate: PipelineCandidate | undefined) => {
+    setSelectedInterviewId(interview.id);
+    setSelectedCandidate(candidate || null);
+    setSelectedTeamId(candidate?.team_id || null);
+    setInterviewDetailsOpen(true);
   };
 
   const updateStage = async (candidateId: string, newStage: CandidateStage) => {
@@ -303,13 +316,37 @@ const TalentPipeline = () => {
               {upcomingInterviews.slice(0, 5).map((interview) => {
                 const candidate = candidates.find(c => c.id === interview.pipeline_id);
                 return (
-                  <div key={interview.id} className="bg-card border border-border rounded-xl p-3 min-w-[200px]">
+                  <div 
+                    key={interview.id} 
+                    className="bg-card border border-border rounded-xl p-3 min-w-[280px] cursor-pointer hover:border-primary/50 transition-colors"
+                    onClick={() => openInterviewDetails(interview, candidate)}
+                  >
                     <p className="font-medium text-foreground">{candidate?.candidate_name || "Unknown"}</p>
                     <p className="text-xs text-muted-foreground">
                       {new Date(interview.scheduled_at).toLocaleDateString()} at{" "}
                       {new Date(interview.scheduled_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </p>
                     <p className="text-xs text-primary mt-1">{interview.interview_type} • {interview.duration_minutes}min</p>
+                    <div className="flex gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
+                      <CalendarExportMenu
+                        interview={{
+                          candidateName: candidate?.candidate_name || "Candidate",
+                          interviewType: interview.interview_type,
+                          scheduledAt: new Date(interview.scheduled_at),
+                          durationMinutes: interview.duration_minutes,
+                          location: interview.location,
+                          interviewerName: interview.interviewer_name,
+                          notes: interview.notes,
+                        }}
+                        size="sm"
+                        variant="ghost"
+                      />
+                      <InterviewFeedbackForm
+                        interviewId={interview.id}
+                        candidateName={candidate?.candidate_name || "Candidate"}
+                        teamId={candidate?.team_id}
+                      />
+                    </div>
                   </div>
                 );
               })}
@@ -439,6 +476,43 @@ const TalentPipeline = () => {
                 </p>
               </div>
             ) : null}
+          </DialogContent>
+        </Dialog>
+
+        {/* Interview Details Dialog */}
+        <Dialog open={interviewDetailsOpen} onOpenChange={setInterviewDetailsOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <ClipboardList className="h-5 w-5" />
+                Interview Feedback
+                {selectedCandidate && ` - ${selectedCandidate.candidate_name}`}
+              </DialogTitle>
+            </DialogHeader>
+            {selectedInterviewId && (
+              <Tabs defaultValue="summary" className="pt-4">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="summary">Feedback Summary</TabsTrigger>
+                  <TabsTrigger value="add">Add Your Feedback</TabsTrigger>
+                </TabsList>
+                <TabsContent value="summary" className="pt-4">
+                  <InterviewFeedbackSummary interviewId={selectedInterviewId} />
+                </TabsContent>
+                <TabsContent value="add" className="pt-4">
+                  <div className="space-y-4">
+                    <p className="text-muted-foreground text-sm">
+                      Share your assessment of the candidate based on this interview.
+                    </p>
+                    <InterviewFeedbackForm
+                      interviewId={selectedInterviewId}
+                      candidateName={selectedCandidate?.candidate_name || "Candidate"}
+                      teamId={selectedTeamId}
+                      onSubmit={() => setInterviewDetailsOpen(false)}
+                    />
+                  </div>
+                </TabsContent>
+              </Tabs>
+            )}
           </DialogContent>
         </Dialog>
       </main>
