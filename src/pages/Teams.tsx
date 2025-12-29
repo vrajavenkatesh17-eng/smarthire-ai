@@ -1,8 +1,10 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Users } from "lucide-react";
+import { ArrowLeft, Users, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TeamManagement } from "@/components/collaboration/TeamManagement";
+import { TeamActivityDashboard } from "@/components/collaboration/TeamActivityDashboard";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
@@ -45,8 +47,8 @@ const Teams = () => {
                 <Users className="w-5 h-5 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-foreground">Teams</h1>
-                <p className="text-xs text-muted-foreground">Collaborate with your team</p>
+                <h1 className="text-xl font-bold text-foreground">Teams & Collaboration</h1>
+                <p className="text-xs text-muted-foreground">Manage teams and view activity</p>
               </div>
             </div>
           </div>
@@ -54,7 +56,26 @@ const Teams = () => {
       </motion.header>
 
       <main className="container mx-auto px-6 py-8">
-        <TeamManagement />
+        <Tabs defaultValue="management" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="management" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Team Management
+            </TabsTrigger>
+            <TabsTrigger value="activity" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Activity Dashboard
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="management">
+            <TeamManagement />
+          </TabsContent>
+          
+          <TabsContent value="activity">
+            <TeamActivityDashboard />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
