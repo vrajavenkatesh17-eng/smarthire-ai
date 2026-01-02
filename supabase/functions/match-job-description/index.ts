@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,32 +31,34 @@ serve(async (req) => {
   }
 
   try {
-    // Verify user authentication
+    // JWT is verified by Supabase (verify_jwt = true in config.toml)
+    // Extract user from the verified JWT
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       console.error("No authorization header provided");
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      return new Response(JSON.stringify({ code: 401, message: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    if (authError || !user) {
-      console.error("Authentication failed:", authError?.message);
-      return new Response(JSON.stringify({ error: "Invalid token" }), {
+    // Parse the JWT to get user info (already verified by Supabase relay)
+    const token = authHeader.replace("Bearer ", "");
+    let userId: string;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      userId = payload.sub;
+      if (!userId) {
+        throw new Error("No user ID in token");
+      }
+      console.log("Authenticated user:", userId);
+    } catch (e) {
+      console.error("Failed to parse JWT:", e);
+      return new Response(JSON.stringify({ code: 401, message: "Invalid token" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    console.log("Authenticated user:", user.id);
 
     const { jobDescription, resumes } = await req.json() as { 
       jobDescription: string; 
@@ -77,7 +78,7 @@ serve(async (req) => {
       });
     }
 
-    console.log(`Matching ${resumes.length} resumes against job description for user:`, user.id);
+    console.log(`Matching ${resumes.length} resumes against job description for user:`, userId);
 
     const results: MatchResult[] = [];
 
