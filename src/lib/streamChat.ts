@@ -18,31 +18,52 @@ export async function streamChat({
   body?: Record<string, unknown>;
 }) {
   const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`;
+  const API_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
   try {
     // Get the current user's session for authentication
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
     if (sessionError || !session) {
       onError("You must be logged in to use this feature. Please sign in and try again.");
       return;
     }
 
+    if (!API_KEY) {
+      onError("Missing backend publishable key configuration.");
+      return;
+    }
+
     const requestBody = messages ? { messages, ...body } : body;
-    
-    const resp = await fetch(CHAT_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify(requestBody),
-    });
+
+    const makeRequest = async (accessToken: string) =>
+      fetch(CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: API_KEY,
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+    let resp = await makeRequest(session.access_token);
+
+    // If the access token was rotated/invalid, refresh once and retry.
+    if (resp.status === 401) {
+      const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+      if (!refreshError && refreshed.session) {
+        resp = await makeRequest(refreshed.session.access_token);
+      }
+    }
 
     if (!resp.ok) {
       const errorData = await resp.json().catch(() => ({ error: "Unknown error" }));
       if (resp.status === 401) {
-        onError("Session expired. Please sign in again.");
+        onError("Authentication failed. Please sign out and sign back in.");
         return;
       }
       if (resp.status === 429) {
