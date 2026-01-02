@@ -32,7 +32,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const token = authHeader.replace("Bearer ", "");
     let userId: string;
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      // Handle base64url encoding (JWT uses - and _ instead of + and /)
+      const base64Payload = token.split('.')[1];
+      const base64 = base64Payload.replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(atob(base64));
       userId = payload.sub;
       if (!userId) {
         throw new Error("No user ID in token");
