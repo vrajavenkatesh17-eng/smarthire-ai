@@ -1,16 +1,16 @@
 project_id = "fenwpejwqpeiiukageur"
 
 [functions.hr-chat]
-verify_jwt = false
+verify_jwt = true
 
 [functions.analyze-resume]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-analysis-notification]
-verify_jwt = false
+verify_jwt = true
 
 [functions.match-job-description]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-interview-reminders]
 verify_jwt = false

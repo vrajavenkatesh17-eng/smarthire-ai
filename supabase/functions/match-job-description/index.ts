@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,6 +32,33 @@ serve(async (req) => {
   }
 
   try {
+    // Verify user authentication
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      console.error("No authorization header provided");
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !user) {
+      console.error("Authentication failed:", authError?.message);
+      return new Response(JSON.stringify({ error: "Invalid token" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    console.log("Authenticated user:", user.id);
+
     const { jobDescription, resumes } = await req.json() as { 
       jobDescription: string; 
       resumes: ResumeInput[];
@@ -49,7 +77,7 @@ serve(async (req) => {
       });
     }
 
-    console.log(`Matching ${resumes.length} resumes against job description`);
+    console.log(`Matching ${resumes.length} resumes against job description for user:`, user.id);
 
     const results: MatchResult[] = [];
 

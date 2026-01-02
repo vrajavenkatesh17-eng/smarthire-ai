@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+
 type Message = { role: "user" | "assistant"; content: string };
 
 export async function streamChat({
@@ -18,19 +20,31 @@ export async function streamChat({
   const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`;
 
   try {
+    // Get the current user's session for authentication
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !session) {
+      onError("You must be logged in to use this feature. Please sign in and try again.");
+      return;
+    }
+
     const requestBody = messages ? { messages, ...body } : body;
     
     const resp = await fetch(CHAT_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        Authorization: `Bearer ${session.access_token}`,
       },
       body: JSON.stringify(requestBody),
     });
 
     if (!resp.ok) {
       const errorData = await resp.json().catch(() => ({ error: "Unknown error" }));
+      if (resp.status === 401) {
+        onError("Session expired. Please sign in again.");
+        return;
+      }
       if (resp.status === 429) {
         onError("Rate limit exceeded. Please wait a moment and try again.");
         return;
