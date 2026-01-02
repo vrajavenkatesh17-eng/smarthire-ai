@@ -257,6 +257,30 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Verify cron secret to prevent unauthorized access
+    const cronSecret = Deno.env.get("CRON_SECRET");
+    const authHeader = req.headers.get("Authorization");
+    
+    if (!cronSecret) {
+      console.error("CRON_SECRET not configured");
+      return new Response(
+        JSON.stringify({ error: "Server configuration error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    // Check if the request has a valid cron secret
+    const providedSecret = authHeader?.replace("Bearer ", "");
+    if (providedSecret !== cronSecret) {
+      console.error("Unauthorized access attempt to send-interview-reminders");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    console.log("Cron job authorized, processing interview reminders");
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
