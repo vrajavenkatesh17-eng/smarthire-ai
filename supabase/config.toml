@@ -4,7 +4,7 @@ project_id = "fenwpejwqpeiiukageur"
 verify_jwt = true
 
 [functions.analyze-resume]
-verify_jwt = true
+verify_jwt = false
 
 [functions.send-analysis-notification]
 verify_jwt = true
