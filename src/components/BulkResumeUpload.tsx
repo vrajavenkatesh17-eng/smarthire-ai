@@ -7,6 +7,8 @@ import { streamChat } from "@/lib/streamChat";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Progress } from "@/components/ui/progress";
+import { extractTextFromFile } from "@/lib/documentParser";
+import AuthErrorBanner from "@/components/AuthErrorBanner";
 
 interface FileWithStatus {
   file: File;
@@ -22,6 +24,7 @@ const BulkResumeUpload = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [sendEmail, setSendEmail] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -88,28 +91,12 @@ const BulkResumeUpload = () => {
     setFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
-  const extractTextFromFile = async (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target?.result as string || "");
-      reader.onerror = () => reject(new Error("Failed to read file"));
-      reader.readAsText(file);
-    });
-  };
-
   const analyzeFile = async (fileWithStatus: FileWithStatus): Promise<string> => {
-    let text = await extractTextFromFile(fileWithStatus.file);
+    // Use proper document parsing
+    const text = await extractTextFromFile(fileWithStatus.file);
     
-    if (!text || text.length < 50) {
-      text = `
-SAMPLE CANDIDATE
-Software Engineer
-Email: sample@email.com
-
-SKILLS: JavaScript, TypeScript, React, Node.js
-EXPERIENCE: 5 years in full-stack development
-EDUCATION: B.S. Computer Science
-      `;
+    if (!text || text.trim().length < 50) {
+      throw new Error("Could not extract enough text from this file");
     }
 
     return new Promise((resolve, reject) => {
@@ -121,7 +108,17 @@ EDUCATION: B.S. Computer Science
           analysisContent += chunk;
         },
         onDone: () => resolve(analysisContent),
-        onError: (err) => reject(new Error(err)),
+        onError: (err) => {
+          // Check for auth errors
+          if (
+            err.toLowerCase().includes("auth") ||
+            err.toLowerCase().includes("sign in") ||
+            err.toLowerCase().includes("session")
+          ) {
+            setAuthError(err);
+          }
+          reject(new Error(err));
+        },
       });
     });
   };
@@ -162,11 +159,15 @@ EDUCATION: B.S. Computer Science
     if (files.length === 0) return;
 
     setIsProcessing(true);
+    setAuthError(null);
     let completedCount = 0;
 
     for (let i = 0; i < files.length; i++) {
       const fileWithStatus = files[i];
       if (fileWithStatus.status !== "pending") continue;
+
+      // Stop processing if we hit an auth error
+      if (authError) break;
 
       setCurrentIndex(i);
       setFiles((prev) =>
@@ -188,10 +189,29 @@ EDUCATION: B.S. Computer Science
           )
         );
       } catch (error) {
+        const errorMessage = (error as Error).message;
+        
+        // If it's an auth error, stop processing
+        if (
+          errorMessage.toLowerCase().includes("auth") ||
+          errorMessage.toLowerCase().includes("sign in") ||
+          errorMessage.toLowerCase().includes("session")
+        ) {
+          setAuthError(errorMessage);
+          setFiles((prev) =>
+            prev.map((f) =>
+              f.id === fileWithStatus.id
+                ? { ...f, status: "pending" } // Reset to pending so it can be retried
+                : f
+            )
+          );
+          break;
+        }
+
         setFiles((prev) =>
           prev.map((f) =>
             f.id === fileWithStatus.id
-              ? { ...f, status: "error", error: (error as Error).message }
+              ? { ...f, status: "error", error: errorMessage }
               : f
           )
         );
@@ -212,6 +232,7 @@ EDUCATION: B.S. Computer Science
   const clearAll = () => {
     setFiles([]);
     setCurrentIndex(0);
+    setAuthError(null);
   };
 
   const pendingCount = files.filter((f) => f.status === "pending").length;
@@ -220,6 +241,13 @@ EDUCATION: B.S. Computer Science
 
   return (
     <div className="space-y-6">
+      {/* Auth Error Banner */}
+      <AuthErrorBanner
+        error={authError}
+        onRetry={processAllFiles}
+        onClear={() => setAuthError(null)}
+      />
+
       {/* Drop Zone */}
       <motion.div
         onDragOver={handleDragOver}

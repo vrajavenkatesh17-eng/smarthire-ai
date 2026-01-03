@@ -6,6 +6,8 @@ import { useToast } from "@/hooks/use-toast";
 import { streamChat } from "@/lib/streamChat";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { extractTextFromFile } from "@/lib/documentParser";
+import AuthErrorBanner from "@/components/AuthErrorBanner";
 
 interface ResumeUploadProps {
   onAnalysisComplete?: (analysis: string) => void;
@@ -18,6 +20,7 @@ const ResumeUpload = ({ onAnalysisComplete }: ResumeUploadProps) => {
   const [isSaving, setIsSaving] = useState(false);
   const [analysis, setAnalysis] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [authError, setAuthError] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -32,22 +35,9 @@ const ResumeUpload = ({ onAnalysisComplete }: ResumeUploadProps) => {
     setIsDragging(false);
   }, []);
 
-  const extractTextFromFile = async (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        // For PDF files, we'll just extract what we can as text
-        // In production, you'd use a PDF parsing library
-        resolve(text || "");
-      };
-      reader.onerror = () => reject(new Error("Failed to read file"));
-      reader.readAsText(file);
-    });
-  };
-
   const handleFile = async (selectedFile: File) => {
     setError("");
+    setAuthError(null);
     setAnalysis("");
     
     // Validate file type
@@ -79,99 +69,62 @@ const ResumeUpload = ({ onAnalysisComplete }: ResumeUploadProps) => {
     setIsAnalyzing(true);
 
     try {
+      // Use proper document parsing
       const text = await extractTextFromFile(selectedFile);
       
-      if (!text || text.length < 50) {
-        // If we can't extract text (e.g., from PDF), use a demo resume
-        const demoResume = `
-JOHN DOE
-Senior Software Engineer
-Email: john.doe@email.com | Phone: (555) 123-4567 | LinkedIn: linkedin.com/in/johndoe
-
-PROFESSIONAL SUMMARY
-Experienced software engineer with 8+ years of expertise in full-stack development, cloud architecture, and team leadership. Proven track record of delivering scalable applications and mentoring junior developers.
-
-SKILLS
-- Programming: JavaScript, TypeScript, Python, Java, Go
-- Frontend: React, Vue.js, Next.js, TailwindCSS
-- Backend: Node.js, Express, Django, FastAPI
-- Cloud: AWS, GCP, Docker, Kubernetes
-- Databases: PostgreSQL, MongoDB, Redis
-
-EXPERIENCE
-Senior Software Engineer | TechCorp Inc. | 2020 - Present
-- Led development of microservices architecture serving 2M+ users
-- Reduced API latency by 40% through performance optimization
-- Mentored team of 5 junior developers
-
-Software Engineer | StartupXYZ | 2017 - 2020
-- Built real-time collaboration features using WebSockets
-- Implemented CI/CD pipelines reducing deployment time by 60%
-
-EDUCATION
-B.S. Computer Science | University of Technology | 2017
-        `;
-        
-        let analysisContent = "";
-        await streamChat({
-          functionName: "analyze-resume",
-          body: { resumeText: demoResume },
-          onDelta: (chunk) => {
-            analysisContent += chunk;
-            setAnalysis(analysisContent);
-          },
-          onDone: () => {
-            setIsAnalyzing(false);
-            onAnalysisComplete?.(analysisContent);
-            toast({
-              title: "Analysis Complete",
-              description: "Resume has been analyzed successfully!",
-            });
-          },
-          onError: (err) => {
-            setIsAnalyzing(false);
-            setError(err);
-            toast({
-              title: "Analysis Failed",
-              description: err,
-              variant: "destructive",
-            });
-          },
+      if (!text || text.trim().length < 50) {
+        setError("Could not extract enough text from this file. Please try a different format.");
+        setIsAnalyzing(false);
+        toast({
+          title: "Extraction Failed",
+          description: "Could not extract text from this file. Try PDF or DOCX format.",
+          variant: "destructive",
         });
-      } else {
-        let analysisContent = "";
-        await streamChat({
-          functionName: "analyze-resume",
-          body: { resumeText: text },
-          onDelta: (chunk) => {
-            analysisContent += chunk;
-            setAnalysis(analysisContent);
-          },
-          onDone: () => {
-            setIsAnalyzing(false);
-            onAnalysisComplete?.(analysisContent);
-            toast({
-              title: "Analysis Complete",
-              description: "Resume has been analyzed successfully!",
-            });
-          },
-          onError: (err) => {
-            setIsAnalyzing(false);
-            setError(err);
-            toast({
-              title: "Analysis Failed",
-              description: err,
-              variant: "destructive",
-            });
-          },
-        });
+        return;
       }
+
+      let analysisContent = "";
+      await streamChat({
+        functionName: "analyze-resume",
+        body: { resumeText: text },
+        onDelta: (chunk) => {
+          analysisContent += chunk;
+          setAnalysis(analysisContent);
+        },
+        onDone: () => {
+          setIsAnalyzing(false);
+          onAnalysisComplete?.(analysisContent);
+          toast({
+            title: "Analysis Complete",
+            description: "Resume has been analyzed successfully!",
+          });
+        },
+        onError: (err) => {
+          setIsAnalyzing(false);
+          // Check if it's an auth error
+          if (
+            err.toLowerCase().includes("auth") ||
+            err.toLowerCase().includes("sign in") ||
+            err.toLowerCase().includes("session")
+          ) {
+            setAuthError(err);
+          } else {
+            setError(err);
+          }
+          toast({
+            title: "Analysis Failed",
+            description: err,
+            variant: "destructive",
+          });
+        },
+      });
     } catch (err) {
       setIsAnalyzing(false);
-      setError("Failed to process file");
+      const errorMessage = err instanceof Error ? err.message : "Failed to process file";
+      setError(errorMessage);
       toast({
         title: "Error",
-        description: "Failed to process the file",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -198,7 +151,14 @@ B.S. Computer Science | University of Technology | 2017
     setFile(null);
     setAnalysis("");
     setError("");
+    setAuthError(null);
     setIsSaved(false);
+  };
+
+  const retryAnalysis = () => {
+    if (file) {
+      handleFile(file);
+    }
   };
 
   const saveAnalysis = async () => {
@@ -248,6 +208,13 @@ B.S. Computer Science | University of Technology | 2017
 
   return (
     <div className="space-y-6">
+      {/* Auth Error Banner */}
+      <AuthErrorBanner
+        error={authError}
+        onRetry={retryAnalysis}
+        onClear={() => setAuthError(null)}
+      />
+
       {/* Drop Zone */}
       <motion.div
         onDragOver={handleDragOver}
@@ -339,7 +306,7 @@ B.S. Computer Science | University of Technology | 2017
 
       {/* Error Message */}
       <AnimatePresence>
-        {error && (
+        {error && !authError && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
