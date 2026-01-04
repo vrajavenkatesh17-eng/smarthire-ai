@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,37 +32,41 @@ serve(async (req) => {
   }
 
   try {
-    // JWT is verified by Supabase (verify_jwt = true in config.toml)
-    // Extract user from the verified JWT
+    // Verify JWT internally using Supabase auth service
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      console.error("No authorization header provided");
+    if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ code: 401, message: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Parse the JWT to get user info (already verified by Supabase relay)
-    const token = authHeader.replace("Bearer ", "");
-    let userId: string;
-    try {
-      // Handle base64url encoding (JWT uses - and _ instead of + and /)
-      const base64Payload = token.split('.')[1];
-      const base64 = base64Payload.replace(/-/g, '+').replace(/_/g, '/');
-      const payload = JSON.parse(atob(base64));
-      userId = payload.sub;
-      if (!userId) {
-        throw new Error("No user ID in token");
-      }
-      console.log("Authenticated user:", userId);
-    } catch (e) {
-      console.error("Failed to parse JWT:", e);
-      return new Response(JSON.stringify({ code: 401, message: "Invalid token" }), {
+    const token = authHeader.slice("Bearer ".length);
+
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      throw new Error("Backend auth environment variables are missing");
+    }
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser(token);
+
+    if (userError || !user) {
+      console.error("Invalid JWT:", userError?.message ?? "no user");
+      return new Response(JSON.stringify({ code: 401, message: "Invalid JWT" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const userId = user.id;
+    console.log("Authenticated user:", userId);
 
     const { jobDescription, resumes } = await req.json() as { 
       jobDescription: string; 
