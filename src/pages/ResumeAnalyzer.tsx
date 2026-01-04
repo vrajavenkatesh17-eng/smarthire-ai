@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import ResumeUpload from "@/components/ResumeUpload";
 import BulkResumeUpload from "@/components/BulkResumeUpload";
+import { JobDescriptionTemplates } from "@/components/JobDescriptionTemplates";
 import { useAuth } from "@/hooks/useAuth";
 
 const features = [
@@ -146,10 +147,17 @@ const ResumeAnalyzer = () => {
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-4">
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">
-                    Paste a job description to get tailored candidate matching scores and recommendations.
-                  </p>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                      Paste a job description to get tailored candidate matching scores.
+                    </p>
+                    <JobDescriptionTemplates
+                      jobDescription={jobDescription}
+                      onSelectTemplate={(desc) => setJobDescription(desc)}
+                      onSaveTemplate={() => {}}
+                    />
+                  </div>
                   <Textarea
                     placeholder="Paste the job description here to compare candidates against specific requirements..."
                     value={jobDescription}
