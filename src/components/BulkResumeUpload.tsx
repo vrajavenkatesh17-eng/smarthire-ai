@@ -18,7 +18,11 @@ interface FileWithStatus {
   error?: string;
 }
 
-const BulkResumeUpload = () => {
+interface BulkResumeUploadProps {
+  jobDescription?: string;
+}
+
+const BulkResumeUpload = ({ jobDescription }: BulkResumeUploadProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [files, setFiles] = useState<FileWithStatus[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -103,7 +107,7 @@ const BulkResumeUpload = () => {
       let analysisContent = "";
       streamChat({
         functionName: "analyze-resume",
-        body: { resumeText: text },
+        body: { resumeText: text, jobDescription: jobDescription || undefined },
         onDelta: (chunk) => {
           analysisContent += chunk;
         },

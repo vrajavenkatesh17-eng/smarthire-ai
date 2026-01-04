@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Sparkles, FileText, Zap, Shield, BarChart3, Files } from "lucide-react";
+import { ArrowLeft, Sparkles, FileText, Zap, Shield, BarChart3, Files, Briefcase, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import ResumeUpload from "@/components/ResumeUpload";
 import BulkResumeUpload from "@/components/BulkResumeUpload";
 import { useAuth } from "@/hooks/useAuth";
@@ -28,6 +30,8 @@ const features = [
 
 const ResumeAnalyzer = () => {
   const { user } = useAuth();
+  const [jobDescription, setJobDescription] = useState("");
+  const [isJobDescOpen, setIsJobDescOpen] = useState(false);
   
   return (
     <div className="min-h-screen bg-background">
@@ -123,6 +127,45 @@ const ResumeAnalyzer = () => {
             ))}
           </motion.div>
 
+          {/* Job Description Input */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="mb-8"
+          >
+            <Collapsible open={isJobDescOpen} onOpenChange={setIsJobDescOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" className="w-full justify-between">
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="w-4 h-4" />
+                    <span>Add Job Description (Optional)</span>
+                    {jobDescription && <span className="text-xs text-primary ml-2">• Added</span>}
+                  </div>
+                  {isJobDescOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-4">
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Paste a job description to get tailored candidate matching scores and recommendations.
+                  </p>
+                  <Textarea
+                    placeholder="Paste the job description here to compare candidates against specific requirements..."
+                    value={jobDescription}
+                    onChange={(e) => setJobDescription(e.target.value)}
+                    className="min-h-[150px] resize-y"
+                  />
+                  {jobDescription && (
+                    <Button variant="ghost" size="sm" onClick={() => setJobDescription("")}>
+                      Clear
+                    </Button>
+                  )}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          </motion.div>
+
           {/* Upload Component with Tabs */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -141,10 +184,10 @@ const ResumeAnalyzer = () => {
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="single">
-                <ResumeUpload />
+                <ResumeUpload jobDescription={jobDescription} />
               </TabsContent>
               <TabsContent value="bulk">
-                <BulkResumeUpload />
+                <BulkResumeUpload jobDescription={jobDescription} />
               </TabsContent>
             </Tabs>
           </motion.div>

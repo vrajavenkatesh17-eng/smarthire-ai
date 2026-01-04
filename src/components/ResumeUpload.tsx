@@ -11,9 +11,10 @@ import AuthErrorBanner from "@/components/AuthErrorBanner";
 
 interface ResumeUploadProps {
   onAnalysisComplete?: (analysis: string) => void;
+  jobDescription?: string;
 }
 
-const ResumeUpload = ({ onAnalysisComplete }: ResumeUploadProps) => {
+const ResumeUpload = ({ onAnalysisComplete, jobDescription }: ResumeUploadProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -86,7 +87,7 @@ const ResumeUpload = ({ onAnalysisComplete }: ResumeUploadProps) => {
       let analysisContent = "";
       await streamChat({
         functionName: "analyze-resume",
-        body: { resumeText: text },
+        body: { resumeText: text, jobDescription: jobDescription || undefined },
         onDelta: (chunk) => {
           analysisContent += chunk;
           setAnalysis(analysisContent);
