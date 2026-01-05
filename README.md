@@ -1,9 +1,9 @@
 🔮 The Eye of Hades
 
 Intelligent Resume Screening & HR Automation Using NLP
-Team: Saravanan Karkuvel, Krishna Raja V, Selvakumaran N, Aathi Sudhan M, Mari Sakthivel S
+
 Track: AI for Societal Impact / Future of Work
-Year: 2025
+Year: 2026
 
 📌 Abstract
 
@@ -84,5 +84,54 @@ Selvakumaran N
 
 Aathi Sudhan M
 
-Mari Sakthivel S
+Mari Sakthivel 
 
+
+Prerequisites
+Node.js 18+ or Bun
+
+Python 3.10+ (for backend)
+
+PostgreSQL 14+ (or Supabase account)
+
+Git
+
+Quick Installation
+bash
+# Clone the repository
+git clone https://github.com/SMAKIHIMSAI/eye-of-hades.git
+cd eye-of-hades
+
+# Install dependencies
+bun install
+# or
+npm install
+
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your API keys and configurations
+
+# Start development server
+bun run dev
+# or
+npm run dev
+Environment Variables
+Create a .env file with:
+
+env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_key
+VITE_DEEPSEEK_API_KEY=your_deepseek_api_key
+VITE_APP_URL=http://localhost:5173
+Running with Docker
+bash
+# Build and run with Docker Compose
+docker-compose up --build
+
+# Or run individual services
+docker run -p 5173:5173 eye-of-hades
+
+
+
+
+ Built with ❤️ by Team Hades | 2026
