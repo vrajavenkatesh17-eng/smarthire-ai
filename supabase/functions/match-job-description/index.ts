@@ -1,16 +1,27 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface ResumeInput {
-  id: string;
-  candidateName: string;
-  analysisResult: any;
-}
+// Input validation schema
+const ResumeInputSchema = z.object({
+  id: z.string().uuid("Invalid resume ID format"),
+  candidateName: z.string().min(1, "Candidate name required").max(200, "Candidate name too long"),
+  analysisResult: z.any(),
+});
+
+const JobMatchSchema = z.object({
+  jobDescription: z.string()
+    .min(50, "Job description too short (minimum 50 characters)")
+    .max(10000, "Job description too long (maximum 10KB)"),
+  resumes: z.array(ResumeInputSchema)
+    .min(1, "At least one resume is required")
+    .max(50, "Too many resumes (maximum 50)"),
+});
 
 interface MatchResult {
   resumeId: string;
@@ -47,7 +58,7 @@ serve(async (req) => {
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-      throw new Error("Backend auth environment variables are missing");
+      throw new Error("Backend configuration error");
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -68,22 +79,26 @@ serve(async (req) => {
     const userId = user.id;
     console.log("Authenticated user:", userId);
 
-    const { jobDescription, resumes } = await req.json() as { 
-      jobDescription: string; 
-      resumes: ResumeInput[];
-    };
+    // Parse and validate input
+    const rawBody = await req.json();
+    const validationResult = JobMatchSchema.safeParse(rawBody);
     
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
-
-    if (!jobDescription || !resumes?.length) {
-      return new Response(JSON.stringify({ error: "Job description and resumes are required" }), {
+    if (!validationResult.success) {
+      console.error("Validation error:", validationResult.error.errors);
+      return new Response(JSON.stringify({ 
+        error: "Invalid input", 
+        details: validationResult.error.errors.map(e => e.message).join(", ")
+      }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    const { jobDescription, resumes } = validationResult.data;
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    
+    if (!LOVABLE_API_KEY) {
+      throw new Error("AI service configuration error");
     }
 
     console.log(`Matching ${resumes.length} resumes against job description for user:`, userId);
@@ -133,7 +148,7 @@ Be objective and fair. Score based on actual qualifications vs requirements.`;
       });
 
       if (!response.ok) {
-        console.error(`AI error for ${resume.candidateName}:`, await response.text());
+        console.error(`AI error for candidate:`, response.status);
         // Return a default result on error
         results.push({
           resumeId: resume.id,
@@ -141,7 +156,7 @@ Be objective and fair. Score based on actual qualifications vs requirements.`;
           matchScore: 0,
           breakdown: { skillsMatch: 0, experienceMatch: 0, educationMatch: 0, overallFit: 0 },
           highlights: [],
-          gaps: ["Could not analyze - AI error"],
+          gaps: ["Could not analyze - service unavailable"],
         });
         continue;
       }
@@ -166,7 +181,7 @@ Be objective and fair. Score based on actual qualifications vs requirements.`;
           throw new Error("No JSON found in response");
         }
       } catch (parseError) {
-        console.error(`Parse error for ${resume.candidateName}:`, parseError);
+        console.error("Parse error for candidate:", parseError);
         results.push({
           resumeId: resume.id,
           candidateName: resume.candidateName,
@@ -183,7 +198,7 @@ Be objective and fair. Score based on actual qualifications vs requirements.`;
     });
   } catch (error) {
     console.error("Job matching error:", error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), {
+    return new Response(JSON.stringify({ error: "An unexpected error occurred" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
