@@ -1,10 +1,22 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Input validation schema
+const AnalyzeResumeSchema = z.object({
+  resumeText: z.string()
+    .min(50, "Resume text too short (minimum 50 characters)")
+    .max(50000, "Resume text too long (maximum 50KB)"),
+  jobDescription: z.string()
+    .max(10000, "Job description too long (maximum 10KB)")
+    .optional()
+    .nullable(),
+});
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -28,7 +40,7 @@ serve(async (req) => {
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-      throw new Error("Backend auth environment variables are missing");
+      throw new Error("Backend configuration error");
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -49,18 +61,26 @@ serve(async (req) => {
     const userId = user.id;
     console.log("Authenticated user:", userId);
 
-    const { resumeText, jobDescription } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    // Parse and validate input
+    const rawBody = await req.json();
+    const validationResult = AnalyzeResumeSchema.safeParse(rawBody);
     
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
-
-    if (!resumeText) {
-      return new Response(JSON.stringify({ error: "Resume text is required" }), {
+    if (!validationResult.success) {
+      console.error("Validation error:", validationResult.error.errors);
+      return new Response(JSON.stringify({ 
+        error: "Invalid input", 
+        details: validationResult.error.errors.map(e => e.message).join(", ")
+      }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    const { resumeText, jobDescription } = validationResult.data;
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    
+    if (!LOVABLE_API_KEY) {
+      throw new Error("AI service configuration error");
     }
 
     console.log("Analyzing resume for user:", userId, "length:", resumeText.length);
@@ -104,8 +124,7 @@ Format your response with clear headers and emojis for readability. Be objective
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
+      console.error("AI gateway error:", response.status);
       
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again." }), {
@@ -131,7 +150,7 @@ Format your response with clear headers and emojis for readability. Be objective
     });
   } catch (error) {
     console.error("Resume analysis error:", error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), {
+    return new Response(JSON.stringify({ error: "An unexpected error occurred" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
