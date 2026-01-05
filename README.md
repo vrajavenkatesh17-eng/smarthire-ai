@@ -62,7 +62,11 @@ This project is built with:
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+Simply open [Resume AI demo](
+
+https://github.com/user-attachments/assets/b0ba1972-66a9-43d6-ba35-2ac2161f6d01
+
+) and click on Share -> Publish.
 
 ## Can I connect a custom domain to my Lovable project?
 
