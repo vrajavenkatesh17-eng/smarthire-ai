@@ -1,20 +1,23 @@
-🧿 The Eye of Hades
+🔮 The Eye of Hades
+
 Intelligent Resume Screening & HR Automation Using NLP
 Team: Saravanan Karkuvel, Krishna Raja V, Selvakumaran N, Aathi Sudhan M, Mari Sakthivel S
-Track: AI for Societal Impact / Future of Work 
+Track: AI for Societal Impact / Future of Work
 Year: 2025
 
 📌 Abstract
+
 The End of the Resume Black Hole
 
 We present "The Eye of Hades", a production-ready intelligent resume screening platform designed to eliminate inefficiencies in modern hiring. By integrating the latest DeepSeek-R1 Large Language Model with a secure, enterprise-grade architecture, our system moves beyond primitive keyword matching to context-aware AI that evaluates true competency—like a seasoned recruiter.
 
-This is not just a prototype—it’s a deployable platform built to make hiring faster, fairer, and more strategic from day one.
+This is not just a prototype—it's a deployable platform built to make hiring faster, fairer, and more strategic from day one.
 
 🚨 The Problem
+
 Traditional hiring suffers from:
 
-Keyword Blindness – ATS rejects qualified candidates who don’t use “approved” terms.
+Keyword Blindness – ATS rejects qualified candidates who don't use "approved" terms.
 
 Unconscious Bias – Manual screening favors familiar backgrounds.
 
@@ -69,7 +72,7 @@ Frontend (if applicable): React / Streamlit
 📄 Project Slides / PDF
 
 🧭 Vision
-We’re not just automating hiring—we’re reimagining it.
+We're not just automating hiring—we're reimagining it.
 The Eye of Hades transforms resume screening into an intelligent, equitable, and human-centric process, helping organizations discover hidden talent while ensuring every candidate gets a fair chance.
 
 👥 Team
@@ -82,5 +85,4 @@ Selvakumaran N
 Aathi Sudhan M
 
 Mari Sakthivel S
-
 
