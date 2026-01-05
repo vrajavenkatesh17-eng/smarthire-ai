@@ -1,7 +1,7 @@
 🧿 The Eye of Hades
 Intelligent Resume Screening & HR Automation Using NLP
 Team: Saravanan Karkuvel, Krishna Raja V, Selvakumaran N, Aathi Sudhan M, Mari Sakthivel S
-Track: AI for Societal Impact / Future of Work
+Track: AI for Societal Impact / Future of Work 
 Year: 2025
 
 📌 Abstract
