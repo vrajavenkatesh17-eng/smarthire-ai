@@ -14,6 +14,7 @@ import CandidateComparison from "./pages/CandidateComparison";
 import TalentPipeline from "./pages/TalentPipeline";
 import Teams from "./pages/Teams";
 import Auth from "./pages/Auth";
+import Creators from "./pages/Creators";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/compare-candidates" element={<ProtectedRoute><CandidateComparison /></ProtectedRoute>} />
             <Route path="/talent-pipeline" element={<ProtectedRoute><TalentPipeline /></ProtectedRoute>} />
             <Route path="/teams" element={<ProtectedRoute><Teams /></ProtectedRoute>} />
+            <Route path="/creators" element={<Creators />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

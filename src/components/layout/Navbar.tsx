@@ -10,6 +10,7 @@ const navLinks = [
   { label: "How It Works", href: "#how-it-works" },
   { label: "Demo", href: "#demo" },
   { label: "Pricing", href: "#pricing" },
+  { label: "Creators", href: "/creators" },
 ];
 
 const Navbar = () => {
@@ -45,19 +46,34 @@ const Navbar = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
             {navLinks.map((link, index) => (
-              <motion.a
+              <motion.div
                 key={link.label}
-                href={link.href}
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="relative text-sm font-medium text-muted-foreground hover:text-foreground transition-colors group"
               >
-                {link.label}
-                <motion.span 
-                  className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary group-hover:w-full transition-all duration-300"
-                />
-              </motion.a>
+                {link.href.startsWith("/") ? (
+                  <Link
+                    to={link.href}
+                    className="relative text-sm font-medium text-muted-foreground hover:text-foreground transition-colors group"
+                  >
+                    {link.label}
+                    <motion.span 
+                      className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary group-hover:w-full transition-all duration-300"
+                    />
+                  </Link>
+                ) : (
+                  <a
+                    href={link.href}
+                    className="relative text-sm font-medium text-muted-foreground hover:text-foreground transition-colors group"
+                  >
+                    {link.label}
+                    <motion.span 
+                      className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary group-hover:w-full transition-all duration-300"
+                    />
+                  </a>
+                )}
+              </motion.div>
             ))}
           </div>
 
@@ -170,17 +186,34 @@ const Navbar = () => {
           >
             <div className="container mx-auto px-6 py-4 flex flex-col gap-2">
               {navLinks.map((link, index) => (
-                <motion.a
-                  key={link.label}
-                  href={link.href}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all py-3 px-4 rounded-lg"
-                  onClick={() => setIsOpen(false)}
-                >
-                  {link.label}
-                </motion.a>
+                link.href.startsWith("/") ? (
+                  <motion.div
+                    key={link.label}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <Link
+                      to={link.href}
+                      className="block text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all py-3 px-4 rounded-lg"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      {link.label}
+                    </Link>
+                  </motion.div>
+                ) : (
+                  <motion.a
+                    key={link.label}
+                    href={link.href}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all py-3 px-4 rounded-lg"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {link.label}
+                  </motion.a>
+                )
               ))}
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
