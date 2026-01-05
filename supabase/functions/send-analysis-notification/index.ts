@@ -1,12 +1,20 @@
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface NotificationRequest {
-  userEmail: string;
-  completedCount: number;
-}
+// Input validation schema
+const NotificationSchema = z.object({
+  userEmail: z.string()
+    .email("Invalid email format")
+    .max(255, "Email too long (max 255 characters)"),
+  completedCount: z.number()
+    .int("Count must be an integer")
+    .min(1, "Count must be at least 1")
+    .max(10000, "Count exceeds maximum (10000)"),
+});
 
 Deno.serve(async (req: Request): Promise<Response> => {
   console.log("send-analysis-notification function called");
@@ -42,24 +50,35 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
       console.log("Authenticated user:", userId);
     } catch (e) {
-      console.error("Failed to parse JWT:", e);
+      console.error("Failed to parse JWT");
       return new Response(JSON.stringify({ code: 401, message: "Invalid token" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const { userEmail, completedCount }: NotificationRequest = await req.json();
-
-    console.log(`Sending notification to ${userEmail} for ${completedCount} resumes`);
-
-    if (!userEmail) {
-      throw new Error("User email is required");
+    // Parse and validate input
+    const rawBody = await req.json();
+    const validationResult = NotificationSchema.safeParse(rawBody);
+    
+    if (!validationResult.success) {
+      console.error("Validation error:", validationResult.error.errors);
+      return new Response(JSON.stringify({ 
+        error: "Invalid input", 
+        details: validationResult.error.errors.map(e => e.message).join(", ")
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
+
+    const { userEmail, completedCount } = validationResult.data;
+
+    console.log(`Sending notification for ${completedCount} resumes`);
 
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     if (!RESEND_API_KEY) {
-      throw new Error("RESEND_API_KEY is not configured");
+      throw new Error("Email service configuration error");
     }
 
     const emailResponse = await fetch("https://api.resend.com/emails", {
@@ -122,23 +141,22 @@ Deno.serve(async (req: Request): Promise<Response> => {
     });
 
     if (!emailResponse.ok) {
-      const errorText = await emailResponse.text();
-      console.error("Resend API error:", errorText);
-      throw new Error(`Failed to send email: ${errorText}`);
+      console.error("Email service error:", emailResponse.status);
+      throw new Error("Failed to send email notification");
     }
 
     const responseData = await emailResponse.json();
 
-    console.log("Email sent successfully:", responseData);
+    console.log("Email sent successfully");
 
-    return new Response(JSON.stringify(responseData), {
+    return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (error: any) {
     console.error("Error in send-analysis-notification function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "An unexpected error occurred" }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
