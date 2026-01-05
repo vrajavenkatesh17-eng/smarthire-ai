@@ -1,7 +1,12 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Github, Linkedin, Mail, Sparkles, Code, Palette, Database } from "lucide-react";
+import { Github, Linkedin, Mail, Sparkles, Code, Palette, Database, Send, Heart, Rocket, Users, MessageSquare, Star, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
@@ -44,100 +49,240 @@ const creators = [
   },
 ];
 
+const FloatingShape = ({ className, delay = 0 }: { className: string; delay?: number }) => (
+  <motion.div
+    className={className}
+    animate={{
+      y: [0, -20, 0],
+      rotate: [0, 5, -5, 0],
+      scale: [1, 1.05, 1],
+    }}
+    transition={{
+      duration: 6,
+      repeat: Infinity,
+      delay,
+      ease: "easeInOut",
+    }}
+  />
+);
+
 const Creators = () => {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    // Simulate form submission
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    toast.success("Message sent successfully! We'll get back to you soon.");
+    setFormData({ name: "", email: "", subject: "", message: "" });
+    setIsSubmitting(false);
+  };
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-hidden">
       <Navbar />
       
-      <main className="pt-24 pb-16">
+      {/* Animated Background Elements */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <FloatingShape 
+          className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-primary/10 to-accent/10 rounded-full blur-3xl"
+          delay={0}
+        />
+        <FloatingShape 
+          className="absolute top-40 right-20 w-96 h-96 bg-gradient-to-br from-accent/10 to-primary/10 rounded-full blur-3xl"
+          delay={2}
+        />
+        <FloatingShape 
+          className="absolute bottom-20 left-1/3 w-80 h-80 bg-gradient-to-br from-primary/5 to-accent/5 rounded-full blur-3xl"
+          delay={4}
+        />
+        
+        {/* Floating Icons */}
+        <motion.div
+          className="absolute top-32 right-[15%] text-primary/20"
+          animate={{ y: [0, -15, 0], rotate: [0, 10, 0] }}
+          transition={{ duration: 5, repeat: Infinity }}
+        >
+          <Star className="w-8 h-8" />
+        </motion.div>
+        <motion.div
+          className="absolute top-[60%] left-[10%] text-accent/20"
+          animate={{ y: [0, 15, 0], rotate: [0, -10, 0] }}
+          transition={{ duration: 4, repeat: Infinity, delay: 1 }}
+        >
+          <Zap className="w-10 h-10" />
+        </motion.div>
+        <motion.div
+          className="absolute top-[40%] right-[8%] text-primary/15"
+          animate={{ y: [0, -10, 0], scale: [1, 1.1, 1] }}
+          transition={{ duration: 6, repeat: Infinity, delay: 2 }}
+        >
+          <Heart className="w-6 h-6" />
+        </motion.div>
+      </div>
+
+      <main className="relative pt-24 pb-16">
         {/* Hero Section */}
-        <section className="container mx-auto px-6 text-center mb-16">
+        <section className="container mx-auto px-6 text-center mb-20">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.6 }}
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full text-primary text-sm font-medium mb-6">
+            <motion.div 
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary/15 to-accent/15 rounded-full text-primary text-sm font-semibold mb-8 border border-primary/20"
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 400 }}
+            >
               <Sparkles className="w-4 h-4" />
-              Meet the Team
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-              The Minds Behind{" "}
-              <span className="bg-gradient-hero bg-clip-text text-transparent">
-                ResumeAI
+              Meet the Innovators
+              <Sparkles className="w-4 h-4" />
+            </motion.div>
+            
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight">
+              The Creative Minds
+              <br />
+              <span className="text-gradient-animated">
+                Behind ResumeAI
               </span>
             </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              We're a passionate team dedicated to revolutionizing HR processes with 
-              cutting-edge AI technology. Our mission is to make hiring smarter, faster, and fairer.
+            
+            <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              We're a passionate team of innovators, designers, and engineers dedicated to 
+              revolutionizing HR processes with cutting-edge AI technology. Our mission: make hiring 
+              <span className="text-primary font-medium"> smarter</span>, 
+              <span className="text-accent font-medium"> faster</span>, and 
+              <span className="text-primary font-medium"> fairer</span>.
             </p>
+          </motion.div>
+
+          {/* Stats Row */}
+          <motion.div 
+            className="flex flex-wrap justify-center gap-8 mt-12"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+          >
+            {[
+              { icon: Users, label: "Team Members", value: "3+" },
+              { icon: Rocket, label: "Projects Shipped", value: "50+" },
+              { icon: Heart, label: "Happy Clients", value: "200+" },
+            ].map((stat, i) => (
+              <motion.div
+                key={stat.label}
+                className="flex items-center gap-3 px-6 py-3 bg-card/50 backdrop-blur-sm rounded-2xl border border-border/50"
+                whileHover={{ scale: 1.05, borderColor: "hsl(var(--primary) / 0.3)" }}
+              >
+                <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20">
+                  <stat.icon className="w-5 h-5 text-primary" />
+                </div>
+                <div className="text-left">
+                  <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground">{stat.label}</p>
+                </div>
+              </motion.div>
+            ))}
           </motion.div>
         </section>
 
         {/* Creators Grid */}
-        <section className="container mx-auto px-6">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <section className="container mx-auto px-6 mb-24">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {creators.map((creator, index) => (
               <motion.div
                 key={creator.name}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.15, duration: 0.5 }}
+                initial={{ opacity: 0, y: 40, rotateX: -10 }}
+                animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                transition={{ delay: index * 0.15 + 0.3, duration: 0.6 }}
+                whileHover={{ y: -8 }}
               >
-                <Card className="h-full overflow-hidden group hover:shadow-xl transition-all duration-300 border-border/50 hover:border-primary/30">
-                  <CardContent className="p-6">
+                <Card className="h-full overflow-hidden group hover:shadow-2xl transition-all duration-500 border-border/50 hover:border-primary/40 bg-card/80 backdrop-blur-sm relative">
+                  {/* Gradient Overlay on Hover */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${creator.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500`} />
+                  
+                  <CardContent className="p-8 relative">
                     {/* Avatar & Icon */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${creator.color} flex items-center justify-center text-white font-bold text-xl shadow-lg`}>
+                    <div className="flex items-start justify-between mb-6">
+                      <motion.div 
+                        className={`w-20 h-20 rounded-3xl bg-gradient-to-br ${creator.color} flex items-center justify-center text-white font-bold text-2xl shadow-xl relative`}
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        transition={{ type: "spring", stiffness: 300 }}
+                      >
                         {creator.avatar}
-                      </div>
-                      <div className={`p-2 rounded-lg bg-gradient-to-br ${creator.color} bg-opacity-10`}>
-                        <creator.icon className="w-5 h-5 text-primary" />
-                      </div>
+                        <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-background border-2 border-background flex items-center justify-center`}>
+                          <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
+                        </div>
+                      </motion.div>
+                      <motion.div 
+                        className={`p-3 rounded-2xl bg-gradient-to-br ${creator.color} bg-opacity-10 shadow-sm`}
+                        whileHover={{ rotate: 15 }}
+                      >
+                        <creator.icon className="w-6 h-6 text-primary" />
+                      </motion.div>
                     </div>
 
                     {/* Name & Role */}
-                    <h3 className="text-xl font-semibold text-foreground mb-1">
+                    <h3 className="text-2xl font-bold text-foreground mb-2">
                       {creator.name}
                     </h3>
-                    <p className={`text-sm font-medium bg-gradient-to-r ${creator.color} bg-clip-text text-transparent mb-3`}>
+                    <p className={`text-sm font-semibold bg-gradient-to-r ${creator.color} bg-clip-text text-transparent mb-4`}>
                       {creator.role}
                     </p>
 
                     {/* Bio */}
-                    <p className="text-muted-foreground text-sm leading-relaxed mb-4">
+                    <p className="text-muted-foreground text-sm leading-relaxed mb-6">
                       {creator.bio}
                     </p>
 
                     {/* Skills */}
                     <div className="flex flex-wrap gap-2 mb-6">
                       {creator.skills.map((skill) => (
-                        <span
+                        <motion.span
                           key={skill}
-                          className="px-2.5 py-1 bg-secondary text-secondary-foreground text-xs rounded-full font-medium"
+                          className="px-3 py-1.5 bg-secondary text-secondary-foreground text-xs rounded-full font-medium border border-border/50"
+                          whileHover={{ scale: 1.1, backgroundColor: "hsl(var(--primary) / 0.1)" }}
                         >
                           {skill}
-                        </span>
+                        </motion.span>
                       ))}
                     </div>
 
                     {/* Social Links */}
-                    <div className="flex gap-2">
-                      <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
-                        <a href={`mailto:${creator.email}`} aria-label="Email">
-                          <Mail className="w-4 h-4" />
-                        </a>
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
-                        <a href={creator.linkedin} aria-label="LinkedIn" target="_blank" rel="noopener noreferrer">
-                          <Linkedin className="w-4 h-4" />
-                        </a>
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
-                        <a href={creator.github} aria-label="GitHub" target="_blank" rel="noopener noreferrer">
-                          <Github className="w-4 h-4" />
-                        </a>
-                      </Button>
+                    <div className="flex gap-2 pt-4 border-t border-border/50">
+                      {[
+                        { icon: Mail, href: `mailto:${creator.email}`, label: "Email" },
+                        { icon: Linkedin, href: creator.linkedin, label: "LinkedIn" },
+                        { icon: Github, href: creator.github, label: "GitHub" },
+                      ].map((social) => (
+                        <motion.div key={social.label} whileHover={{ scale: 1.15, y: -2 }}>
+                          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-primary/10" asChild>
+                            <a href={social.href} aria-label={social.label} target={social.label !== "Email" ? "_blank" : undefined} rel="noopener noreferrer">
+                              <social.icon className="w-5 h-5" />
+                            </a>
+                          </Button>
+                        </motion.div>
+                      ))}
                     </div>
                   </CardContent>
                 </Card>
@@ -147,33 +292,228 @@ const Creators = () => {
         </section>
 
         {/* Values Section */}
-        <section className="container mx-auto px-6 mt-20">
+        <section className="container mx-auto px-6 mb-24">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="max-w-4xl mx-auto text-center"
+            className="max-w-5xl mx-auto"
           >
-            <h2 className="text-3xl font-bold text-foreground mb-8">Our Values</h2>
+            <div className="text-center mb-12">
+              <motion.div 
+                className="inline-flex items-center gap-2 px-4 py-2 bg-accent/10 rounded-full text-accent text-sm font-medium mb-4"
+                whileHover={{ scale: 1.05 }}
+              >
+                <Heart className="w-4 h-4" />
+                What Drives Us
+              </motion.div>
+              <h2 className="text-4xl md:text-5xl font-bold text-foreground">Our Core Values</h2>
+            </div>
+            
             <div className="grid md:grid-cols-3 gap-6">
               {[
-                { title: "Innovation", desc: "Pushing boundaries with AI to solve real HR challenges" },
-                { title: "Fairness", desc: "Building tools that promote unbiased hiring decisions" },
-                { title: "Simplicity", desc: "Making complex workflows intuitive and accessible" },
+                { 
+                  title: "Innovation", 
+                  desc: "Pushing boundaries with AI to solve real HR challenges and create breakthrough solutions",
+                  icon: Rocket,
+                  gradient: "from-violet-500 to-purple-600"
+                },
+                { 
+                  title: "Fairness", 
+                  desc: "Building tools that promote unbiased hiring decisions and equal opportunities for all",
+                  icon: Heart,
+                  gradient: "from-pink-500 to-rose-600"
+                },
+                { 
+                  title: "Simplicity", 
+                  desc: "Making complex workflows intuitive, accessible, and delightful to use every day",
+                  icon: Zap,
+                  gradient: "from-blue-500 to-cyan-600"
+                },
               ].map((value, i) => (
                 <motion.div
                   key={value.title}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
-                  className="p-6 rounded-xl bg-secondary/50 border border-border/50"
+                  whileHover={{ y: -5, scale: 1.02 }}
+                  className="p-8 rounded-3xl bg-card/80 backdrop-blur-sm border border-border/50 hover:border-primary/30 transition-all duration-300 hover:shadow-xl relative overflow-hidden group"
                 >
-                  <h3 className="font-semibold text-foreground mb-2">{value.title}</h3>
-                  <p className="text-sm text-muted-foreground">{value.desc}</p>
+                  <div className={`absolute inset-0 bg-gradient-to-br ${value.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-500`} />
+                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${value.gradient} flex items-center justify-center mb-6 shadow-lg`}>
+                    <value.icon className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground mb-3">{value.title}</h3>
+                  <p className="text-muted-foreground leading-relaxed">{value.desc}</p>
                 </motion.div>
               ))}
             </div>
+          </motion.div>
+        </section>
+
+        {/* Contact Form Section */}
+        <section className="container mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="max-w-4xl mx-auto"
+          >
+            <Card className="overflow-hidden border-border/50 bg-card/80 backdrop-blur-sm shadow-2xl">
+              <div className="grid lg:grid-cols-2">
+                {/* Left Side - Info */}
+                <div className="p-8 lg:p-12 bg-gradient-to-br from-primary to-accent text-white relative overflow-hidden">
+                  <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSIyIi8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
+                  
+                  <div className="relative">
+                    <motion.div 
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full text-sm font-medium mb-6 backdrop-blur-sm"
+                      whileHover={{ scale: 1.05 }}
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      Get in Touch
+                    </motion.div>
+                    
+                    <h2 className="text-3xl lg:text-4xl font-bold mb-4">
+                      Let's Build Something Amazing Together
+                    </h2>
+                    <p className="text-white/80 mb-8 leading-relaxed">
+                      Have a question, feedback, or just want to say hello? We'd love to hear from you. 
+                      Our team typically responds within 24 hours.
+                    </p>
+
+                    <div className="space-y-4">
+                      {[
+                        { icon: Mail, text: "hello@resumeai.com" },
+                        { icon: Users, text: "Join our growing community" },
+                        { icon: Rocket, text: "Partnership opportunities welcome" },
+                      ].map((item, i) => (
+                        <motion.div 
+                          key={i}
+                          className="flex items-center gap-3 text-white/90"
+                          initial={{ opacity: 0, x: -20 }}
+                          whileInView={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.1 }}
+                        >
+                          <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
+                            <item.icon className="w-5 h-5" />
+                          </div>
+                          <span>{item.text}</span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Decorative Elements */}
+                  <motion.div
+                    className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/10 rounded-full"
+                    animate={{ scale: [1, 1.1, 1] }}
+                    transition={{ duration: 4, repeat: Infinity }}
+                  />
+                  <motion.div
+                    className="absolute -top-5 -right-5 w-20 h-20 bg-white/10 rounded-full"
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 3, repeat: Infinity, delay: 1 }}
+                  />
+                </div>
+
+                {/* Right Side - Form */}
+                <div className="p-8 lg:p-12">
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name" className="text-foreground font-medium">
+                          Your Name <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="name"
+                          placeholder="John Doe"
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          className="h-12 rounded-xl border-border/50 focus:border-primary bg-background"
+                          maxLength={100}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="email" className="text-foreground font-medium">
+                          Email Address <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="john@example.com"
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          className="h-12 rounded-xl border-border/50 focus:border-primary bg-background"
+                          maxLength={255}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="subject" className="text-foreground font-medium">
+                        Subject
+                      </Label>
+                      <Input
+                        id="subject"
+                        placeholder="How can we help you?"
+                        value={formData.subject}
+                        onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                        className="h-12 rounded-xl border-border/50 focus:border-primary bg-background"
+                        maxLength={200}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="message" className="text-foreground font-medium">
+                        Message <span className="text-destructive">*</span>
+                      </Label>
+                      <Textarea
+                        id="message"
+                        placeholder="Tell us about your project, question, or feedback..."
+                        value={formData.message}
+                        onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                        className="min-h-[140px] rounded-xl border-border/50 focus:border-primary bg-background resize-none"
+                        maxLength={1000}
+                      />
+                      <p className="text-xs text-muted-foreground text-right">
+                        {formData.message.length}/1000
+                      </p>
+                    </div>
+
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button
+                        type="submit"
+                        size="lg"
+                        className="w-full h-14 rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-semibold text-lg shadow-lg"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? (
+                          <motion.div
+                            className="flex items-center gap-2"
+                            animate={{ opacity: [0.5, 1, 0.5] }}
+                            transition={{ duration: 1.5, repeat: Infinity }}
+                          >
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            Sending...
+                          </motion.div>
+                        ) : (
+                          <span className="flex items-center gap-2">
+                            <Send className="w-5 h-5" />
+                            Send Message
+                          </span>
+                        )}
+                      </Button>
+                    </motion.div>
+
+                    <p className="text-xs text-muted-foreground text-center">
+                      By submitting this form, you agree to our privacy policy. We'll never share your information.
+                    </p>
+                  </form>
+                </div>
+              </div>
+            </Card>
           </motion.div>
         </section>
       </main>
