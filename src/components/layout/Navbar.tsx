@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Sparkles, LayoutDashboard, FileText, LogIn, LogOut, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,22 @@ const navLinks = [
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { user, signOut } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    if (location.pathname !== "/") {
+      // Navigate to home page with the hash
+      navigate("/" + href);
+    } else {
+      // Already on home page, just scroll to the section
+      const element = document.querySelector(href);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  };
 
   return (
     <motion.nav 
@@ -65,7 +81,8 @@ const Navbar = () => {
                 ) : (
                   <a
                     href={link.href}
-                    className="relative text-sm font-medium text-muted-foreground hover:text-foreground transition-colors group"
+                    onClick={(e) => handleAnchorClick(e, link.href)}
+                    className="relative text-sm font-medium text-muted-foreground hover:text-foreground transition-colors group cursor-pointer"
                   >
                     {link.label}
                     <motion.span 
@@ -208,8 +225,11 @@ const Navbar = () => {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all py-3 px-4 rounded-lg"
-                    onClick={() => setIsOpen(false)}
+                    className="text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all py-3 px-4 rounded-lg cursor-pointer"
+                    onClick={(e) => {
+                      handleAnchorClick(e, link.href);
+                      setIsOpen(false);
+                    }}
                   >
                     {link.label}
                   </motion.a>
