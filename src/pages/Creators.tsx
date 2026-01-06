@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Github, Linkedin, Mail, Sparkles, Code, Palette, Database, Send, Heart, Rocket, Users, MessageSquare, Star, Zap } from "lucide-react";
+import { Github, Linkedin, Mail, Sparkles, Code, Palette, Database, Send, Heart, Rocket, Users, MessageSquare, Star, Zap, Quote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
@@ -16,6 +17,7 @@ const creators = [
     role: "Full Stack Developer",
     bio: "Passionate about building AI-powered solutions that transform HR workflows and make hiring smarter.",
     avatar: "KR",
+    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face",
     icon: Code,
     color: "from-violet-500 to-purple-600",
     skills: ["React", "TypeScript", "AI/ML", "Supabase"],
@@ -28,6 +30,7 @@ const creators = [
     role: "UI/UX Designer",
     bio: "Creating intuitive and beautiful user experiences that make complex HR tasks feel effortless.",
     avatar: "AC",
+    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&crop=face",
     icon: Palette,
     color: "from-pink-500 to-rose-600",
     skills: ["Figma", "UI Design", "User Research", "Prototyping"],
@@ -40,12 +43,40 @@ const creators = [
     role: "Backend Engineer",
     bio: "Building robust and scalable infrastructure to power intelligent resume analysis at scale.",
     avatar: "SW",
+    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face",
     icon: Database,
     color: "from-blue-500 to-cyan-600",
     skills: ["Node.js", "PostgreSQL", "APIs", "Cloud"],
     email: "sam@resumeai.com",
     linkedin: "#",
     github: "#",
+  },
+];
+
+const testimonials = [
+  {
+    name: "Sarah Johnson",
+    role: "HR Director",
+    company: "TechCorp Inc.",
+    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=face",
+    quote: "ResumeAI has completely transformed our hiring process. We've reduced time-to-hire by 60% and found better quality candidates.",
+    rating: 5,
+  },
+  {
+    name: "Michael Chen",
+    role: "Talent Acquisition Manager",
+    company: "StartupXYZ",
+    image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&crop=face",
+    quote: "The AI-powered matching is incredibly accurate. It's like having a senior recruiter available 24/7.",
+    rating: 5,
+  },
+  {
+    name: "Emily Rodriguez",
+    role: "CEO",
+    company: "GrowthLabs",
+    image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=200&h=200&fit=crop&crop=face",
+    quote: "We scaled from 20 to 200 employees while keeping our HR team the same size. ResumeAI made it possible.",
+    rating: 5,
   },
 ];
 
@@ -91,12 +122,26 @@ const Creators = () => {
 
     setIsSubmitting(true);
     
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    toast.success("Message sent successfully! We'll get back to you soon.");
-    setFormData({ name: "", email: "", subject: "", message: "" });
-    setIsSubmitting(false);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-contact-email", {
+        body: {
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          subject: formData.subject.trim() || undefined,
+          message: formData.message.trim(),
+        },
+      });
+
+      if (error) throw error;
+      
+      toast.success("Message sent successfully! We'll get back to you soon.");
+      setFormData({ name: "", email: "", subject: "", message: "" });
+    } catch (error: any) {
+      console.error("Error sending contact form:", error);
+      toast.error("Failed to send message. Please try again later.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -225,11 +270,15 @@ const Creators = () => {
                     {/* Avatar & Icon */}
                     <div className="flex items-start justify-between mb-6">
                       <motion.div 
-                        className={`w-20 h-20 rounded-3xl bg-gradient-to-br ${creator.color} flex items-center justify-center text-white font-bold text-2xl shadow-xl relative`}
+                        className={`w-20 h-20 rounded-3xl overflow-hidden shadow-xl relative ring-4 ring-background`}
                         whileHover={{ scale: 1.1, rotate: 5 }}
                         transition={{ type: "spring", stiffness: 300 }}
                       >
-                        {creator.avatar}
+                        <img 
+                          src={creator.image} 
+                          alt={creator.name}
+                          className="w-full h-full object-cover"
+                        />
                         <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-background border-2 border-background flex items-center justify-center`}>
                           <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
                         </div>
@@ -346,6 +395,77 @@ const Creators = () => {
                   </div>
                   <h3 className="text-xl font-bold text-foreground mb-3">{value.title}</h3>
                   <p className="text-muted-foreground leading-relaxed">{value.desc}</p>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </section>
+
+        {/* Testimonials Section */}
+        <section className="container mx-auto px-6 mb-24">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="max-w-6xl mx-auto"
+          >
+            <div className="text-center mb-12">
+              <motion.div 
+                className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full text-primary text-sm font-medium mb-4"
+                whileHover={{ scale: 1.05 }}
+              >
+                <Quote className="w-4 h-4" />
+                Client Testimonials
+              </motion.div>
+              <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">What Our Clients Say</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Discover how ResumeAI has helped companies transform their hiring process
+              </p>
+            </div>
+            
+            <div className="grid md:grid-cols-3 gap-8">
+              {testimonials.map((testimonial, i) => (
+                <motion.div
+                  key={testimonial.name}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  whileHover={{ y: -5 }}
+                >
+                  <Card className="h-full bg-card/80 backdrop-blur-sm border-border/50 hover:border-primary/30 transition-all duration-300 hover:shadow-xl relative overflow-hidden group">
+                    <div className="absolute top-4 right-4 text-primary/10 group-hover:text-primary/20 transition-colors">
+                      <Quote className="w-16 h-16" />
+                    </div>
+                    
+                    <CardContent className="p-8 relative">
+                      {/* Stars */}
+                      <div className="flex gap-1 mb-4">
+                        {[...Array(testimonial.rating)].map((_, idx) => (
+                          <Star key={idx} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                        ))}
+                      </div>
+                      
+                      {/* Quote */}
+                      <p className="text-foreground/90 leading-relaxed mb-6 italic">
+                        "{testimonial.quote}"
+                      </p>
+                      
+                      {/* Author */}
+                      <div className="flex items-center gap-4 pt-4 border-t border-border/50">
+                        <img 
+                          src={testimonial.image} 
+                          alt={testimonial.name}
+                          className="w-12 h-12 rounded-full object-cover ring-2 ring-primary/20"
+                        />
+                        <div>
+                          <p className="font-semibold text-foreground">{testimonial.name}</p>
+                          <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+                          <p className="text-xs text-primary font-medium">{testimonial.company}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </motion.div>
               ))}
             </div>
