@@ -51,6 +51,32 @@ const creators = [
     linkedin: "#",
     github: "#",
   },
+  {
+    name: "Priya Sharma",
+    role: "AI/ML Engineer",
+    bio: "Developing intelligent algorithms that power our resume matching and candidate scoring systems.",
+    avatar: "PS",
+    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop&crop=face",
+    icon: Sparkles,
+    color: "from-emerald-500 to-teal-600",
+    skills: ["Python", "TensorFlow", "NLP", "Machine Learning"],
+    email: "priya@resumeai.com",
+    linkedin: "#",
+    github: "#",
+  },
+  {
+    name: "David Park",
+    role: "Product Manager",
+    bio: "Bridging the gap between user needs and technology to deliver impactful HR solutions.",
+    avatar: "DP",
+    image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=400&fit=crop&crop=face",
+    icon: Rocket,
+    color: "from-orange-500 to-amber-600",
+    skills: ["Strategy", "Agile", "User Research", "Analytics"],
+    email: "david@resumeai.com",
+    linkedin: "#",
+    github: "#",
+  },
 ];
 
 const testimonials = [
@@ -230,7 +256,7 @@ const Creators = () => {
             transition={{ delay: 0.3, duration: 0.5 }}
           >
             {[
-              { icon: Users, label: "Team Members", value: "3+" },
+              { icon: Users, label: "Team Members", value: "5" },
               { icon: Rocket, label: "Projects Shipped", value: "50+" },
               { icon: Heart, label: "Happy Clients", value: "200+" },
             ].map((stat, i) => (
