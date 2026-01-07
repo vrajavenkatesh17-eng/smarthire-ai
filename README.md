@@ -98,6 +98,14 @@ Git
 
 FOR INSTALLATION DOWNLOAD THE ZIP FILE AND RUN IT IN VSCODE AND CREATE A FREE ACOUNT IN OUR WEBSITE!
 
+
+You can also login by using your google account for security features 
+<img width="797" height="722" alt="Image" src="https://github.com/user-attachments/assets/14bda300-b096-488d-a7b1-422fe696915c" />
+
+
+
+
+
 [https://github.com/vrajavenkatesh17-eng/smarthire-ai/issues/1#issue-3781098977](https://github.com/user-attachments/assets/8b6629e9-8918-4a4d-990a-bea908243d58)
 
 
@@ -108,6 +116,4 @@ FOR INSTALLATION DOWNLOAD THE ZIP FILE AND RUN IT IN VSCODE AND CREATE A FREE AC
 <img width="1133" height="847" alt="Image" src="https://github.com/user-attachments/assets/76440c51-07b6-4aa5-a454-66d7e08184d2" />
 <img width="933" height="652" alt="Image" src="https://github.com/user-attachments/assets/a9b3c95a-874f-419e-980a-2bcf3b7a5e87" />
 
-You can also login by using your google account for security features 
-<img width="797" height="722" alt="Image" src="https://github.com/user-attachments/assets/14bda300-b096-488d-a7b1-422fe696915c" />
  Built with ❤️ by Team Hades | 2026
