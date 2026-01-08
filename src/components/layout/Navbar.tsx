@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Sparkles, LayoutDashboard, FileText, LogIn, LogOut, History } from "lucide-react";
+import { Menu, X, Sparkles, LayoutDashboard, FileText, LogIn, LogOut, History, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -134,6 +134,20 @@ const Navbar = () => {
                 </Button>
               </Link>
             </motion.div>
+            {user && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.38 }}
+              >
+                <Link to="/profile">
+                  <Button variant="ghost" size="sm" className="gap-2">
+                    <User className="w-4 h-4" />
+                    Profile
+                  </Button>
+                </Link>
+              </motion.div>
+            )}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -261,6 +275,14 @@ const Navbar = () => {
                     Dashboard
                   </Button>
                 </Link>
+                {user && (
+                  <Link to="/profile" onClick={() => setIsOpen(false)}>
+                    <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
+                      <User className="w-4 h-4" />
+                      Profile
+                    </Button>
+                  </Link>
+                )}
                 {user ? (
                   <Button variant="outline" size="sm" className="gap-2" onClick={() => { signOut(); setIsOpen(false); }}>
                     <LogOut className="w-4 h-4" />

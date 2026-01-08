@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Mail, Lock, User, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,34 +17,52 @@ import {
 const emailSchema = z.string().trim().email({ message: "Invalid email address" });
 const passwordSchema = z.string().min(6, { message: "Password must be at least 6 characters" });
 
-type AuthMode = "signin" | "signup" | "verify";
+type AuthMode = "signin" | "signup" | "verify" | "forgot-password" | "reset-password";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [otp, setOtp] = useState("");
   const [authMode, setAuthMode] = useState<AuthMode>("signin");
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string; confirmPassword?: string }>({});
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    // Check if this is a password reset callback
+    const type = searchParams.get("type");
+    if (type === "recovery") {
+      setAuthMode("reset-password");
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
+      if (event === "PASSWORD_RECOVERY") {
+        setAuthMode("reset-password");
+      } else if (session?.user && authMode !== "reset-password") {
         navigate("/resume-analyzer");
       }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        navigate("/resume-analyzer");
+      if (session?.user && authMode !== "reset-password") {
+        // Check if this is a recovery session
+        const type = searchParams.get("type");
+        if (type === "recovery") {
+          setAuthMode("reset-password");
+        } else {
+          navigate("/resume-analyzer");
+        }
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, authMode, searchParams]);
 
   const validateForm = () => {
     const newErrors: typeof errors = {};
@@ -57,6 +75,22 @@ const Auth = () => {
     const passwordResult = passwordSchema.safeParse(password);
     if (!passwordResult.success) {
       newErrors.password = passwordResult.error.errors[0].message;
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateResetPassword = () => {
+    const newErrors: typeof errors = {};
+    
+    const passwordResult = passwordSchema.safeParse(password);
+    if (!passwordResult.success) {
+      newErrors.password = passwordResult.error.errors[0].message;
+    }
+    
+    if (password !== confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
     }
     
     setErrors(newErrors);
@@ -225,6 +259,81 @@ const Auth = () => {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const emailResult = emailSchema.safeParse(email);
+    if (!emailResult.success) {
+      setErrors({ email: emailResult.error.errors[0].message });
+      return;
+    }
+    
+    setIsLoading(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/auth?type=recovery`,
+      });
+      
+      if (error) {
+        toast({
+          title: "Reset Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Check Your Email",
+          description: "We've sent you a password reset link.",
+        });
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateResetPassword()) return;
+    
+    setIsLoading(true);
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: password,
+      });
+      
+      if (error) {
+        toast({
+          title: "Reset Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Password Updated!",
+          description: "Your password has been successfully updated.",
+        });
+        navigate("/resume-analyzer");
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     try {
@@ -259,6 +368,10 @@ const Auth = () => {
         return { title: "Create Account", subtitle: "Sign up to get started" };
       case "verify":
         return { title: "Verify Email", subtitle: "Enter the code from your email" };
+      case "forgot-password":
+        return { title: "Forgot Password", subtitle: "Reset your password" };
+      case "reset-password":
+        return { title: "Reset Password", subtitle: "Enter your new password" };
       default:
         return { title: "Welcome Back", subtitle: "Sign in to continue" };
     }
@@ -363,6 +476,114 @@ const Auth = () => {
                   </div>
                 </form>
               </>
+            ) : authMode === "forgot-password" ? (
+              <>
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-bold text-foreground mb-2">Forgot Password</h2>
+                  <p className="text-muted-foreground">
+                    Enter your email and we'll send you a reset link
+                  </p>
+                </div>
+
+                <form onSubmit={handleForgotPassword} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                    {errors.email && (
+                      <p className="text-sm text-destructive">{errors.email}</p>
+                    )}
+                  </div>
+
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Sending Reset Link...
+                      </>
+                    ) : (
+                      "Send Reset Link"
+                    )}
+                  </Button>
+
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => setAuthMode("signin")}
+                      className="text-sm text-muted-foreground hover:text-foreground"
+                    >
+                      ← Back to sign in
+                    </button>
+                  </div>
+                </form>
+              </>
+            ) : authMode === "reset-password" ? (
+              <>
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-bold text-foreground mb-2">Reset Password</h2>
+                  <p className="text-muted-foreground">
+                    Enter your new password below
+                  </p>
+                </div>
+
+                <form onSubmit={handleResetPassword} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="password">New Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                    {errors.password && (
+                      <p className="text-sm text-destructive">{errors.password}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirm Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        placeholder="••••••••"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                    {errors.confirmPassword && (
+                      <p className="text-sm text-destructive">{errors.confirmPassword}</p>
+                    )}
+                  </div>
+
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Updating Password...
+                      </>
+                    ) : (
+                      "Update Password"
+                    )}
+                  </Button>
+                </form>
+              </>
             ) : (
               <>
                 <div className="text-center mb-8">
@@ -454,6 +675,18 @@ const Auth = () => {
                       <p className="text-sm text-destructive">{errors.password}</p>
                     )}
                   </div>
+
+                  {authMode === "signin" && (
+                    <div className="text-right">
+                      <button
+                        type="button"
+                        onClick={() => setAuthMode("forgot-password")}
+                        className="text-sm text-primary hover:underline font-medium"
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
+                  )}
 
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? (
