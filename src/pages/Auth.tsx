@@ -200,7 +200,7 @@ const Auth = () => {
       const { error } = await supabase.auth.verifyOtp({
         email: email.trim(),
         token: otp,
-        type: "email",
+        type: "signup",
       });
       
       if (error) {
