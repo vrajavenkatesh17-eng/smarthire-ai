@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Camera, Loader2, Save } from "lucide-react";
+import { ArrowLeft, User, Camera, Loader2, Save, Lock, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,15 @@ const Profile = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  
+  // Password fields
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -118,6 +127,51 @@ const Profile = () => {
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSavePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError("");
+
+    if (newPassword.length < 6) {
+      setPasswordError("Password must be at least 6 characters");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Passwords do not match");
+      return;
+    }
+
+    setIsSavingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) {
+        toast({
+          title: "Password Update Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Password Updated",
+          description: "Your password has been successfully set.",
+        });
+        setNewPassword("");
+        setConfirmPassword("");
+      }
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingPassword(false);
     }
   };
 
@@ -247,8 +301,9 @@ const Profile = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md"
+          className="w-full max-w-md space-y-6"
         >
+          {/* Profile Card */}
           <div className="bg-card border border-border rounded-2xl p-8">
             <form onSubmit={handleSaveProfile} className="space-y-6">
               {/* Avatar Section */}
@@ -322,6 +377,86 @@ const Profile = () => {
                   <>
                     <Save className="w-4 h-4 mr-2" />
                     Save Changes
+                  </>
+                )}
+              </Button>
+            </form>
+          </div>
+
+          {/* Password Card */}
+          <div className="bg-card border border-border rounded-2xl p-8">
+            <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Lock className="w-5 h-5" />
+              Set Password (Optional)
+            </h2>
+            <p className="text-sm text-muted-foreground mb-6">
+              You can set a password to sign in with email and password instead of using the confirmation link.
+            </p>
+            
+            <form onSubmit={handleSavePassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">New Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="newPassword"
+                    type={showNewPassword ? "text" : "password"}
+                    placeholder="Enter new password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="pl-10 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Confirm new password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="pl-10 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {passwordError && (
+                <p className="text-sm text-destructive">{passwordError}</p>
+              )}
+
+              <Button 
+                type="submit" 
+                variant="outline" 
+                className="w-full" 
+                disabled={isSavingPassword || !newPassword || !confirmPassword}
+              >
+                {isSavingPassword ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Setting Password...
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-4 h-4 mr-2" />
+                    Set Password
                   </>
                 )}
               </Button>
