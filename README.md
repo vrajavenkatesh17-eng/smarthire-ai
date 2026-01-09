@@ -26,6 +26,9 @@ Resource Drain – HR spends ~70% of time manually reviewing resumes.
 Result: Missed talent, poor hiring fits, and a broken candidate experience.
 
 ✅ Our Solution
+
+![Uploading image.png…]()
+
 1. Context-Aware AI Screening
 Semantic Understanding with DeepSeek-R1: Reads for meaning, not keywords.
 
