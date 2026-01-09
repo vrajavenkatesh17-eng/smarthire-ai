@@ -106,6 +106,7 @@ You can also login by using your google account for security features
 
 
 Below mentioned video is old version the updated version with more features is on progress,Features like: sign with google etc
+
 [https://github.com/vrajavenkatesh17-eng/smarthire-ai/issues/1#issue-3781098977](https://github.com/user-attachments/assets/8b6629e9-8918-4a4d-990a-bea908243d58)
 
 
