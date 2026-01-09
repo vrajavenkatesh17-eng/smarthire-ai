@@ -8,22 +8,16 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-} from "@/components/ui/input-otp";
 
 const emailSchema = z.string().trim().email({ message: "Invalid email address" });
 const passwordSchema = z.string().min(6, { message: "Password must be at least 6 characters" });
 
-type AuthMode = "signin" | "signup" | "verify" | "forgot-password" | "reset-password";
+type AuthMode = "signin" | "signup" | "forgot-password" | "reset-password";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [otp, setOtp] = useState("");
   const [authMode, setAuthMode] = useState<AuthMode>("signin");
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -44,19 +38,25 @@ const Auth = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") {
         setAuthMode("reset-password");
-      } else if (session?.user && authMode !== "reset-password") {
-        navigate("/resume-analyzer");
+      } else if (event === "SIGNED_IN" && session?.user) {
+        // Check if this is from email confirmation
+        const type = searchParams.get("type");
+        if (type === "recovery") {
+          setAuthMode("reset-password");
+        } else {
+          // Redirect to profile after email confirmation
+          navigate("/profile");
+        }
       }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user && authMode !== "reset-password") {
-        // Check if this is a recovery session
         const type = searchParams.get("type");
         if (type === "recovery") {
           setAuthMode("reset-password");
         } else {
-          navigate("/resume-analyzer");
+          navigate("/profile");
         }
       }
     });
@@ -120,7 +120,7 @@ const Auth = () => {
         } else if (error.message.includes("Email not confirmed")) {
           toast({
             title: "Email Not Verified",
-            description: "Please verify your email before signing in.",
+            description: "Please check your email and click the confirmation link.",
             variant: "destructive",
           });
         } else {
@@ -154,7 +154,7 @@ const Auth = () => {
         email: email.trim(),
         password,
         options: {
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: `${window.location.origin}/profile`,
         },
       });
       
@@ -167,85 +167,7 @@ const Auth = () => {
       } else {
         toast({
           title: "Check Your Email",
-          description: "We've sent you a 6-digit verification code.",
-        });
-        setAuthMode("verify");
-      }
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: "Something went wrong. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (otp.length !== 6) {
-      toast({
-        title: "Invalid Code",
-        description: "Please enter the 6-digit code from your email.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsLoading(true);
-
-    try {
-      const { error } = await supabase.auth.verifyOtp({
-        email: email.trim(),
-        token: otp,
-        type: "signup",
-      });
-      
-      if (error) {
-        toast({
-          title: "Verification Failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Email Verified!",
-          description: "You can now sign in with your credentials.",
-        });
-        setAuthMode("signin");
-        setOtp("");
-      }
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: "Something went wrong. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleResendOtp = async () => {
-    setIsLoading(true);
-    try {
-      const { error } = await supabase.auth.resend({
-        type: "signup",
-        email: email.trim(),
-      });
-      
-      if (error) {
-        toast({
-          title: "Resend Failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Code Sent",
-          description: "A new verification code has been sent to your email.",
+          description: "We've sent you a confirmation link. Click it to verify your account.",
         });
       }
     } catch (err) {
@@ -366,8 +288,6 @@ const Auth = () => {
     switch (authMode) {
       case "signup":
         return { title: "Create Account", subtitle: "Sign up to get started" };
-      case "verify":
-        return { title: "Verify Email", subtitle: "Enter the code from your email" };
       case "forgot-password":
         return { title: "Forgot Password", subtitle: "Reset your password" };
       case "reset-password":
@@ -416,67 +336,7 @@ const Auth = () => {
           className="w-full max-w-md"
         >
           <div className="bg-card border border-border rounded-2xl p-8">
-            {authMode === "verify" ? (
-              <>
-                <div className="text-center mb-8">
-                  <h2 className="text-2xl font-bold text-foreground mb-2">Verify Your Email</h2>
-                  <p className="text-muted-foreground">
-                    Enter the 6-digit code sent to <span className="font-medium text-foreground">{email}</span>
-                  </p>
-                </div>
-
-                <form onSubmit={handleVerifyOtp} className="space-y-6">
-                  <div className="flex justify-center">
-                    <InputOTP
-                      maxLength={6}
-                      value={otp}
-                      onChange={(value) => setOtp(value)}
-                    >
-                      <InputOTPGroup>
-                        <InputOTPSlot index={0} />
-                        <InputOTPSlot index={1} />
-                        <InputOTPSlot index={2} />
-                        <InputOTPSlot index={3} />
-                        <InputOTPSlot index={4} />
-                        <InputOTPSlot index={5} />
-                      </InputOTPGroup>
-                    </InputOTP>
-                  </div>
-
-                  <Button type="submit" className="w-full" disabled={isLoading || otp.length !== 6}>
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Verifying...
-                      </>
-                    ) : (
-                      "Verify Email"
-                    )}
-                  </Button>
-
-                  <div className="text-center space-y-2">
-                    <p className="text-sm text-muted-foreground">
-                      Didn't receive the code?{" "}
-                      <button
-                        type="button"
-                        onClick={handleResendOtp}
-                        disabled={isLoading}
-                        className="text-primary hover:underline font-medium"
-                      >
-                        Resend
-                      </button>
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setAuthMode("signup")}
-                      className="text-sm text-muted-foreground hover:text-foreground"
-                    >
-                      ← Back to sign up
-                    </button>
-                  </div>
-                </form>
-              </>
-            ) : authMode === "forgot-password" ? (
+            {authMode === "forgot-password" ? (
               <>
                 <div className="text-center mb-8">
                   <h2 className="text-2xl font-bold text-foreground mb-2">Forgot Password</h2>
