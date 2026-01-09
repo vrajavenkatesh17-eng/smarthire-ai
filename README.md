@@ -110,6 +110,8 @@ Below mentioned video is old version the updated version with more features is o
 [https://github.com/vrajavenkatesh17-eng/smarthire-ai/issues/1#issue-3781098977](https://github.com/user-attachments/assets/8b6629e9-8918-4a4d-990a-bea908243d58)
 
 
+<img width="1918" height="912" alt="image" src="https://github.com/user-attachments/assets/6a00a559-d9b2-4a34-a4df-9757a6c8ecc0" />
+
 <img width="1137" height="902" alt="Image" src="https://github.com/user-attachments/assets/ac25aeda-2493-4b49-976b-978bec04326f" />
 
 <img width="1147" height="898" alt="Image" src="https://github.com/user-attachments/assets/c23bdddd-c8f2-4517-9ed6-064085828b01" />
