@@ -27,7 +27,7 @@ Result: Missed talent, poor hiring fits, and a broken candidate experience.
 
 ✅ Our Solution
 
-![Uploading image.png…]()
+<img width="1918" height="912" alt="image" src="https://github.com/user-attachments/assets/31e62ef8-6246-4553-b8ff-ae19ed386ff0" />
 
 1. Context-Aware AI Screening
 Semantic Understanding with DeepSeek-R1: Reads for meaning, not keywords.
