@@ -129,9 +129,7 @@ const Footer = () => {
       }} transition={{
         delay: 0.5
       }} className="pt-8 border-t border-background/10 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-background/50">
-            © 2024 ResumeAI. All rights reserved.
-          </p>
+          <p className="text-sm text-background/50">© 2026 ResumeAI. All rights reserved.</p>
           <motion.p className="text-sm text-background/50" whileHover={{
           scale: 1.02
         }}>
