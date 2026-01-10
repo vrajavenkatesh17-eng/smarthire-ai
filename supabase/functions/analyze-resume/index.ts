@@ -97,15 +97,28 @@ Your analysis should include:
    - Experience Relevance  
    - Education & Certifications
    - Communication (based on resume quality)
-   - Overall Score (weighted average)
 6. **Strengths**: Top 3-5 candidate strengths
 7. **Potential Concerns**: Any gaps or areas for interview focus
 8. **Interview Recommendations**: 3 specific questions to ask this candidate
-9. **Hiring Recommendation**: Strong Yes / Yes / Maybe / No with reasoning
+
+## 🎯 HIRING POSSIBILITY SCORE (CRITICAL - ALWAYS INCLUDE)
+At the end of your analysis, you MUST provide a clear hiring score:
+
+**📊 HIRING SCORE: [X]/100**
+
+This score represents the candidate's overall hiring possibility based on:
+- Skills match (25%)
+- Experience relevance (30%)
+- Education & certifications (15%)
+- Communication quality (10%)
+- Cultural fit indicators (10%)
+- Growth potential (10%)
+
+Provide a brief explanation of the score and a final recommendation: Strong Hire / Hire / Consider / Pass
 
 ${jobDescription ? `\nJob Description for context:\n${jobDescription}` : ''}
 
-Format your response with clear headers and emojis for readability. Be objective and professional.`;
+Format your response with clear headers and emojis for readability. Be objective and professional. ALWAYS end with the HIRING SCORE section.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
