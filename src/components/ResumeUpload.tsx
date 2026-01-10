@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { extractTextFromFile } from "@/lib/documentParser";
 import AuthErrorBanner from "@/components/AuthErrorBanner";
+import AnalysisResultDisplay from "@/components/AnalysisResultDisplay";
 
 interface ResumeUploadProps {
   onAnalysisComplete?: (analysis: string) => void;
@@ -329,7 +330,7 @@ const ResumeUpload = ({ onAnalysisComplete, jobDescription }: ResumeUploadProps)
             exit={{ opacity: 0, y: 20 }}
             className="bg-card border border-border rounded-2xl p-6"
           >
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
                   <FileText className="w-4 h-4 text-primary" />
@@ -357,11 +358,22 @@ const ResumeUpload = ({ onAnalysisComplete, jobDescription }: ResumeUploadProps)
                 </Button>
               )}
             </div>
-            <div className="prose prose-sm max-w-none text-foreground">
-              <pre className="whitespace-pre-wrap text-sm font-sans bg-secondary/50 rounded-xl p-4 overflow-x-auto">
-                {analysis || "Analyzing resume..."}
-              </pre>
-            </div>
+            
+            {isAnalyzing && !analysis ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto mb-4" />
+                  <p className="text-muted-foreground">Analyzing resume...</p>
+                </div>
+              </div>
+            ) : analysis ? (
+              <AnalysisResultDisplay
+                analysis={analysis}
+                candidateName={null}
+                candidateEmail={null}
+                aiScore={null}
+              />
+            ) : null}
           </motion.div>
         )}
       </AnimatePresence>

@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, FileText, Trash2, Clock, Loader2, Search, 
   SlidersHorizontal, ArrowUpDown, Download, Users, Briefcase,
-  FileDown, CheckSquare, Square
+  FileDown, CheckSquare, Square, Mail, Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { exportToCSV, exportToPDF, exportSingleResumeToPDF } from "@/lib/exportUtils";
+import AnalysisResultDisplay from "@/components/AnalysisResultDisplay";
 
 interface AnalyzedResume {
   id: string;
@@ -427,25 +428,34 @@ const ResumeHistory = () => {
                               <Square className="w-5 h-5" />
                             )}
                           </button>
-                          <div className="min-w-0">
-                            <p className="font-medium text-foreground truncate">
-                              {resume.candidate_name || resume.file_name}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatDate(resume.created_at)}
-                            </p>
-                            {resume.ai_score && (
-                              <div className="mt-1">
-                                <span className={`text-xs font-medium ${
-                                  resume.ai_score >= 90 ? "text-green-500" :
-                                  resume.ai_score >= 80 ? "text-primary" :
-                                  resume.ai_score >= 70 ? "text-yellow-500" :
-                                  "text-orange-500"
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold text-foreground truncate">
+                                {resume.candidate_name || resume.file_name}
+                              </p>
+                              {resume.ai_score && (
+                                <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  resume.ai_score >= 90 ? "bg-green-500/10 text-green-500" :
+                                  resume.ai_score >= 80 ? "bg-emerald-500/10 text-emerald-500" :
+                                  resume.ai_score >= 70 ? "bg-yellow-500/10 text-yellow-500" :
+                                  "bg-orange-500/10 text-orange-500"
                                 }`}>
-                                  Score: {resume.ai_score}/100
-                                </span>
+                                  <Star className="w-3 h-3" />
+                                  {resume.ai_score}
+                                </div>
+                              )}
+                            </div>
+                            {resume.candidate_email && (
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <Mail className="w-3 h-3 text-muted-foreground" />
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {resume.candidate_email}
+                                </p>
                               </div>
                             )}
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {formatDate(resume.created_at)}
+                            </p>
                           </div>
                         </div>
                         <Button
@@ -474,19 +484,14 @@ const ResumeHistory = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="bg-card border border-border rounded-2xl p-6"
                   >
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                          <FileText className="w-5 h-5 text-primary" />
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                          <FileText className="w-4 h-4 text-primary" />
                         </div>
-                        <div>
-                          <h2 className="font-semibold text-foreground">
-                            {selectedResume.candidate_name || selectedResume.file_name}
-                          </h2>
-                          <p className="text-sm text-muted-foreground">
-                            Analyzed on {formatDate(selectedResume.created_at)}
-                          </p>
-                        </div>
+                        <span className="text-sm text-muted-foreground">
+                          Analyzed on {formatDate(selectedResume.created_at)}
+                        </span>
                       </div>
                       <Button
                         variant="outline"
@@ -498,13 +503,16 @@ const ResumeHistory = () => {
                       </Button>
                     </div>
 
-                    <div className="prose prose-sm max-w-none text-foreground">
-                      <pre className="whitespace-pre-wrap text-sm font-sans bg-secondary/50 rounded-xl p-4 overflow-x-auto">
-                        {typeof selectedResume.analysis_result === "string"
+                    <AnalysisResultDisplay
+                      analysis={
+                        typeof selectedResume.analysis_result === "string"
                           ? selectedResume.analysis_result
-                          : JSON.stringify(selectedResume.analysis_result, null, 2)}
-                      </pre>
-                    </div>
+                          : JSON.stringify(selectedResume.analysis_result, null, 2)
+                      }
+                      candidateName={selectedResume.candidate_name}
+                      candidateEmail={selectedResume.candidate_email}
+                      aiScore={selectedResume.ai_score}
+                    />
                   </motion.div>
                 ) : (
                   <div className="bg-card border border-border rounded-2xl p-12 text-center">
