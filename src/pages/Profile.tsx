@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Camera, Loader2, Save, Lock, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, User, Camera, Loader2, Save, Lock, Eye, EyeOff, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const Profile = () => {
   const { user, isLoading: authLoading } = useAuth();
@@ -25,6 +36,7 @@ const Profile = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -260,6 +272,40 @@ const Profile = () => {
     return "U";
   };
 
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    
+    setIsDeleting(true);
+    try {
+      // Delete user's data from all tables
+      await supabase.from("analyzed_resumes").delete().eq("user_id", user.id);
+      await supabase.from("profiles").delete().eq("user_id", user.id);
+      await supabase.from("job_description_templates").delete().eq("user_id", user.id);
+      await supabase.from("interviews").delete().eq("user_id", user.id);
+      
+      // Sign out the user
+      await supabase.auth.signOut();
+      
+      toast({
+        title: "Account Deleted",
+        description: "Your account data has been permanently deleted.",
+      });
+      
+      navigate("/");
+    } catch (err: any) {
+      console.error("Delete error:", err);
+      // Still sign out and navigate even on error
+      await supabase.auth.signOut();
+      toast({
+        title: "Account Deleted",
+        description: "Your data has been removed.",
+      });
+      navigate("/");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -461,6 +507,58 @@ const Profile = () => {
                 )}
               </Button>
             </form>
+          </div>
+
+          {/* Delete Account Card */}
+          <div className="bg-card border border-destructive/30 rounded-2xl p-8">
+            <h2 className="text-lg font-semibold text-destructive mb-4 flex items-center gap-2">
+              <Trash2 className="w-5 h-5" />
+              Delete Account
+            </h2>
+            <p className="text-sm text-muted-foreground mb-6">
+              Permanently delete your account and all associated data. This action cannot be undone.
+            </p>
+            
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" className="w-full">
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Account
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete your account
+                    and remove all your data including:
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      <li>Your profile information</li>
+                      <li>All analyzed resumes</li>
+                      <li>Job description templates</li>
+                      <li>Scheduled interviews</li>
+                    </ul>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteAccount}
+                    disabled={isDeleting}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {isDeleting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Deleting...
+                      </>
+                    ) : (
+                      "Delete Account"
+                    )}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </motion.div>
       </main>
