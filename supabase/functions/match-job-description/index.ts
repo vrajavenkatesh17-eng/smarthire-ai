@@ -35,6 +35,11 @@ interface MatchResult {
   };
   highlights: string[];
   gaps: string[];
+  isSuitable: boolean;
+  suitabilityReason: string;
+  recommendedRole: string;
+  roleDescription: string;
+  limitations: string[];
 }
 
 serve(async (req) => {
@@ -110,7 +115,7 @@ serve(async (req) => {
         ? resume.analysisResult 
         : JSON.stringify(resume.analysisResult);
 
-      const prompt = `You are an expert job-candidate matching AI. Analyze how well this candidate matches the job description.
+      const prompt = `You are an expert job-candidate matching AI with deep understanding of career development and organizational growth. Analyze how well this candidate matches the job description.
 
 Job Description:
 ${jobDescription}
@@ -128,10 +133,20 @@ Provide a JSON response with EXACTLY this structure (no markdown, just JSON):
     "overallFit": <number 0-100>
   },
   "highlights": ["<strength 1>", "<strength 2>", "<strength 3>"],
-  "gaps": ["<gap 1>", "<gap 2>"]
+  "gaps": ["<gap 1>", "<gap 2>"],
+  "isSuitable": <true if matchScore >= 50, false otherwise>,
+  "suitabilityReason": "<A clear, honest sentence explaining why this candidate is or is not suitable. If not suitable, be direct and professional about it>",
+  "recommendedRole": "<The specific job title/role this candidate would excel in based on their skills and experience. This should be a role that would help the company progress. Be specific like 'Senior Frontend Developer' or 'Data Analytics Lead'>",
+  "roleDescription": "<A deep but simple 2-3 sentence explanation of WHY this role suits them and HOW they would contribute to company growth. Focus on their unique value proposition>",
+  "limitations": ["<specific limitation 1>", "<specific limitation 2>", "<specific limitation 3>"]
 }
 
-Be objective and fair. Score based on actual qualifications vs requirements.`;
+IMPORTANT GUIDELINES:
+- If matchScore is below 50, set isSuitable to false and clearly explain why in suitabilityReason
+- recommendedRole should be the BEST role for this candidate (may differ from the job description if they're better suited elsewhere)
+- roleDescription should explain in simple but insightful words how this person can drive company progress
+- limitations should be honest, specific weaknesses or gaps that hiring managers should be aware of
+- Be objective, fair, and constructive in your assessment`;
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -157,6 +172,11 @@ Be objective and fair. Score based on actual qualifications vs requirements.`;
           breakdown: { skillsMatch: 0, experienceMatch: 0, educationMatch: 0, overallFit: 0 },
           highlights: [],
           gaps: ["Could not analyze - service unavailable"],
+          isSuitable: false,
+          suitabilityReason: "Analysis could not be completed due to service unavailability",
+          recommendedRole: "Unable to determine",
+          roleDescription: "Please retry the analysis to get role recommendations",
+          limitations: ["Analysis incomplete"],
         });
         continue;
       }
@@ -169,13 +189,19 @@ Be objective and fair. Score based on actual qualifications vs requirements.`;
         const jsonMatch = content.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           const parsed = JSON.parse(jsonMatch[0]);
+          const matchScore = parsed.matchScore || 0;
           results.push({
             resumeId: resume.id,
             candidateName: resume.candidateName,
-            matchScore: parsed.matchScore || 0,
+            matchScore: matchScore,
             breakdown: parsed.breakdown || { skillsMatch: 0, experienceMatch: 0, educationMatch: 0, overallFit: 0 },
             highlights: parsed.highlights || [],
             gaps: parsed.gaps || [],
+            isSuitable: parsed.isSuitable ?? matchScore >= 50,
+            suitabilityReason: parsed.suitabilityReason || (matchScore >= 50 ? "Candidate meets basic requirements" : "Candidate does not meet minimum requirements"),
+            recommendedRole: parsed.recommendedRole || "General position",
+            roleDescription: parsed.roleDescription || "Role analysis not available",
+            limitations: parsed.limitations || [],
           });
         } else {
           throw new Error("No JSON found in response");
@@ -189,6 +215,11 @@ Be objective and fair. Score based on actual qualifications vs requirements.`;
           breakdown: { skillsMatch: 50, experienceMatch: 50, educationMatch: 50, overallFit: 50 },
           highlights: ["Analysis completed"],
           gaps: ["Detailed breakdown unavailable"],
+          isSuitable: true,
+          suitabilityReason: "Basic analysis completed, detailed assessment unavailable",
+          recommendedRole: "Review manually",
+          roleDescription: "Detailed role analysis could not be generated",
+          limitations: ["Detailed analysis unavailable"],
         });
       }
     }
