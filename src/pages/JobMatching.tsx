@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Briefcase, FileText, Loader2, Sparkles, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Briefcase, FileText, Loader2, Sparkles, CheckCircle2, XCircle, Target, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -31,6 +31,11 @@ interface MatchResult {
   };
   highlights: string[];
   gaps: string[];
+  isSuitable: boolean;
+  suitabilityReason: string;
+  recommendedRole: string;
+  roleDescription: string;
+  limitations: string[];
 }
 
 const JobMatching = () => {
@@ -293,7 +298,11 @@ const JobMatching = () => {
                   .map((result, index) => (
                     <div
                       key={result.resumeId}
-                      className="p-4 bg-secondary/30 rounded-xl border border-border"
+                      className={`p-4 rounded-xl border ${
+                        result.isSuitable 
+                          ? "bg-secondary/30 border-border" 
+                          : "bg-destructive/5 border-destructive/30"
+                      }`}
                     >
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
@@ -308,15 +317,44 @@ const JobMatching = () => {
                           <span className="font-semibold text-foreground">
                             {result.candidateName}
                           </span>
+                          {result.isSuitable ? (
+                            <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          ) : (
+                            <XCircle className="w-4 h-4 text-destructive" />
+                          )}
                         </div>
                         <span className={`text-lg font-bold ${
                           result.matchScore >= 85 ? "text-green-500" :
                           result.matchScore >= 70 ? "text-primary" :
                           result.matchScore >= 50 ? "text-yellow-500" :
-                          "text-orange-500"
+                          "text-destructive"
                         }`}>
                           {result.matchScore}%
                         </span>
+                      </div>
+
+                      {/* Suitability Status */}
+                      <div className={`p-3 rounded-lg mb-3 ${
+                        result.isSuitable ? "bg-green-500/10" : "bg-destructive/10"
+                      }`}>
+                        <p className={`text-sm font-medium ${
+                          result.isSuitable ? "text-green-600" : "text-destructive"
+                        }`}>
+                          {result.isSuitable ? "✓ Suitable Candidate" : "✗ Not Suitable"}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {result.suitabilityReason}
+                        </p>
+                      </div>
+
+                      {/* Recommended Role */}
+                      <div className="p-3 bg-primary/10 rounded-lg mb-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Target className="w-4 h-4 text-primary" />
+                          <p className="text-sm font-medium text-primary">Best Fit Role</p>
+                        </div>
+                        <p className="text-sm font-semibold text-foreground">{result.recommendedRole}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{result.roleDescription}</p>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2 mb-3">
@@ -328,10 +366,24 @@ const JobMatching = () => {
 
                       {result.highlights.length > 0 && (
                         <div className="mb-2">
-                          <p className="text-xs font-medium text-green-500 mb-1">Highlights:</p>
+                          <p className="text-xs font-medium text-green-500 mb-1">Strengths:</p>
                           <p className="text-xs text-muted-foreground">
                             {result.highlights.join(", ")}
                           </p>
+                        </div>
+                      )}
+
+                      {result.limitations.length > 0 && (
+                        <div className="mb-2">
+                          <div className="flex items-center gap-1 mb-1">
+                            <AlertTriangle className="w-3 h-3 text-yellow-500" />
+                            <p className="text-xs font-medium text-yellow-500">Limitations:</p>
+                          </div>
+                          <ul className="text-xs text-muted-foreground list-disc list-inside">
+                            {result.limitations.map((limitation, i) => (
+                              <li key={i}>{limitation}</li>
+                            ))}
+                          </ul>
                         </div>
                       )}
 
