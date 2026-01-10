@@ -88,10 +88,10 @@ const JobMatching = () => {
   };
 
   const runJobMatching = async () => {
-    if (!jobDescription.trim()) {
+    if (jobDescription.trim().length < 10) {
       toast({
         title: "Job description required",
-        description: "Please enter a job description to match against",
+        description: "Please enter at least 10 characters for the job description",
         variant: "destructive",
       });
       return;
@@ -199,6 +199,9 @@ const JobMatching = () => {
                 onChange={(e) => setJobDescription(e.target.value)}
                 className="min-h-[200px] resize-none"
               />
+              <p className="text-xs text-muted-foreground mt-2">
+                {jobDescription.length} characters {jobDescription.length < 10 && "(minimum 10 required)"}
+              </p>
             </motion.div>
 
             <motion.div
