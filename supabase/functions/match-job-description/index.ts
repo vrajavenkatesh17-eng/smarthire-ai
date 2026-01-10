@@ -16,7 +16,7 @@ const ResumeInputSchema = z.object({
 
 const JobMatchSchema = z.object({
   jobDescription: z.string()
-    .min(50, "Job description too short (minimum 50 characters)")
+    .min(10, "Job description too short (minimum 10 characters)")
     .max(10000, "Job description too long (maximum 10KB)"),
   resumes: z.array(ResumeInputSchema)
     .min(1, "At least one resume is required")
