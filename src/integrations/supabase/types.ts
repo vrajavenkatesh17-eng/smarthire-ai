@@ -343,6 +343,50 @@ export type Database = {
         }
         Relationships: []
       }
+      pipeline_activities: {
+        Row: {
+          activity_type: string
+          candidate_id: string | null
+          candidate_name: string
+          created_at: string
+          description: string
+          id: string
+          new_stage: string | null
+          old_stage: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          candidate_id?: string | null
+          candidate_name: string
+          created_at?: string
+          description: string
+          id?: string
+          new_stage?: string | null
+          old_stage?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          candidate_id?: string | null
+          candidate_name?: string
+          created_at?: string
+          description?: string
+          id?: string
+          new_stage?: string | null
+          old_stage?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_activities_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidate_pipeline"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string

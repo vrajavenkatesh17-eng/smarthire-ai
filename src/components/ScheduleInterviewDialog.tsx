@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { Calendar, Clock, Video, MapPin, User } from "lucide-react";
+import { Calendar, Clock, Video, MapPin, User, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 
 interface ScheduleInterviewDialogProps {
   candidateName: string;
@@ -30,6 +32,7 @@ export const ScheduleInterviewDialog = ({
 }: ScheduleInterviewDialogProps) => {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sendConfirmation, setSendConfirmation] = useState(true);
   const [form, setForm] = useState({
     date: "",
     time: "",
@@ -93,10 +96,58 @@ export const ScheduleInterviewDialog = ({
 
       if (interviewError) throw interviewError;
 
-      toast({
-        title: "Interview Scheduled",
-        description: `Interview with ${candidateName} scheduled for ${scheduledAt.toLocaleDateString()}`,
+      // Log activity for the pipeline stage change
+      await supabase.from("pipeline_activities").insert({
+        user_id: userId,
+        candidate_id: finalPipelineId,
+        candidate_name: candidateName,
+        activity_type: "stage_change",
+        new_stage: "interview_scheduled",
+        description: `Interview scheduled with ${candidateName} for ${format(scheduledAt, "MMM d, yyyy")} at ${format(scheduledAt, "h:mm a")}`,
       });
+
+      // Send confirmation email to candidate if enabled and email exists
+      if (sendConfirmation && candidateEmail) {
+        try {
+          const { error: emailError } = await supabase.functions.invoke("send-interview-confirmation", {
+            body: {
+              candidateName,
+              candidateEmail,
+              interviewDate: format(scheduledAt, "MMMM d, yyyy"),
+              interviewTime: format(scheduledAt, "h:mm a"),
+              durationMinutes: parseInt(form.duration),
+              interviewType: form.type,
+              location: form.location || undefined,
+              interviewerName: form.interviewer || undefined,
+              notes: form.notes || undefined,
+            },
+          });
+
+          if (emailError) {
+            console.error("Failed to send confirmation email:", emailError);
+            toast({
+              title: "Interview Scheduled",
+              description: `Interview with ${candidateName} scheduled, but email notification failed.`,
+            });
+          } else {
+            toast({
+              title: "Interview Scheduled & Email Sent",
+              description: `Interview confirmation sent to ${candidateEmail}`,
+            });
+          }
+        } catch (emailErr) {
+          console.error("Email error:", emailErr);
+          toast({
+            title: "Interview Scheduled",
+            description: `Interview with ${candidateName} scheduled for ${scheduledAt.toLocaleDateString()}`,
+          });
+        }
+      } else {
+        toast({
+          title: "Interview Scheduled",
+          description: `Interview with ${candidateName} scheduled for ${scheduledAt.toLocaleDateString()}`,
+        });
+      }
 
       setOpen(false);
       setForm({ date: "", time: "", duration: "60", type: "video", location: "", interviewer: "", notes: "" });
@@ -131,7 +182,12 @@ export const ScheduleInterviewDialog = ({
         <div className="space-y-4 pt-4">
           <div className="bg-secondary/50 rounded-lg p-3">
             <p className="font-medium text-foreground">{candidateName}</p>
-            {candidateEmail && <p className="text-sm text-muted-foreground">{candidateEmail}</p>}
+            {candidateEmail && (
+              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                <Mail className="w-3 h-3" />
+                {candidateEmail}
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -224,6 +280,23 @@ export const ScheduleInterviewDialog = ({
               rows={2}
             />
           </div>
+
+          {candidateEmail && (
+            <div className="flex items-center space-x-2 bg-primary/5 rounded-lg p-3">
+              <Checkbox
+                id="send-confirmation"
+                checked={sendConfirmation}
+                onCheckedChange={(checked) => setSendConfirmation(checked === true)}
+              />
+              <label
+                htmlFor="send-confirmation"
+                className="text-sm font-medium leading-none cursor-pointer flex items-center gap-2"
+              >
+                <Mail className="w-4 h-4 text-primary" />
+                Send confirmation email to candidate
+              </label>
+            </div>
+          )}
 
           <Button onClick={handleSchedule} className="w-full" disabled={isSubmitting || !form.date || !form.time}>
             {isSubmitting ? "Scheduling..." : "Schedule Interview"}
