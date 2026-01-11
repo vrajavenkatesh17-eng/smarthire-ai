@@ -2,24 +2,33 @@ import { motion } from "framer-motion";
 import { 
   User, Mail, Briefcase, Star, Award, Target, AlertTriangle, 
   MessageSquare, TrendingUp, CheckCircle, XCircle, Sparkles,
-  GraduationCap, Code, Heart, Zap
+  GraduationCap, Code, Heart, Zap, Calendar, CalendarPlus
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { ScheduleInterviewDialog } from "@/components/ScheduleInterviewDialog";
+import { useAuth } from "@/hooks/useAuth";
 
 interface AnalysisResultDisplayProps {
   analysis: string;
   candidateName?: string | null;
   candidateEmail?: string | null;
   aiScore?: number | null;
+  resumeId?: string;
+  showScheduleInterview?: boolean;
 }
 
 const AnalysisResultDisplay = ({ 
   analysis, 
   candidateName, 
   candidateEmail,
-  aiScore 
+  aiScore,
+  resumeId,
+  showScheduleInterview = true
 }: AnalysisResultDisplayProps) => {
+  const { user } = useAuth();
+  
   // Parse sections from the analysis text
   const parseSection = (text: string, sectionName: string): string => {
     const regex = new RegExp(`(?:#{1,3}\\s*)?(?:\\*{1,2})?(?:🎯|📊|💼|🎓|💡|⚠️|❓|✨)?\\s*${sectionName}[^:]*[:]*(.+?)(?=(?:#{1,3}\\s*)?(?:\\*{1,2})?(?:🎯|📊|💼|🎓|💡|⚠️|❓|✨)?\\s*(?:Candidate|Skills|Experience|Education|Scoring|Strengths|Potential|Interview|Hiring|$))`, 'is');
@@ -151,7 +160,7 @@ const AnalysisResultDisplay = ({
             
             {/* Recommendation Badge */}
             {recommendation && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 {(() => {
                   const style = getRecommendationStyle(recommendation);
                   const Icon = style.icon;
@@ -162,7 +171,39 @@ const AnalysisResultDisplay = ({
                     </Badge>
                   );
                 })()}
+                
+                {/* Schedule Interview Button */}
+                {showScheduleInterview && user && (
+                  <ScheduleInterviewDialog
+                    candidateName={candidateName || "Candidate"}
+                    candidateEmail={candidateEmail}
+                    resumeId={resumeId}
+                    userId={user.id}
+                    trigger={
+                      <Button variant="outline" size="sm" className="gap-1.5">
+                        <CalendarPlus className="w-4 h-4" />
+                        Schedule Interview
+                      </Button>
+                    }
+                  />
+                )}
               </div>
+            )}
+            
+            {/* Show schedule button even without recommendation */}
+            {!recommendation && showScheduleInterview && user && (
+              <ScheduleInterviewDialog
+                candidateName={candidateName || "Candidate"}
+                candidateEmail={candidateEmail}
+                resumeId={resumeId}
+                userId={user.id}
+                trigger={
+                  <Button variant="outline" size="sm" className="gap-1.5 mt-2">
+                    <CalendarPlus className="w-4 h-4" />
+                    Schedule Interview
+                  </Button>
+                }
+              />
             )}
           </div>
         </div>

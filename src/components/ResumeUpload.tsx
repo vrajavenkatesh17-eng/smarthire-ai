@@ -372,6 +372,7 @@ const ResumeUpload = ({ onAnalysisComplete, jobDescription }: ResumeUploadProps)
                 candidateName={null}
                 candidateEmail={null}
                 aiScore={null}
+                showScheduleInterview={false}
               />
             ) : null}
           </motion.div>

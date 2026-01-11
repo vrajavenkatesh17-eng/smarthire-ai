@@ -512,6 +512,8 @@ const ResumeHistory = () => {
                       candidateName={selectedResume.candidate_name}
                       candidateEmail={selectedResume.candidate_email}
                       aiScore={selectedResume.ai_score}
+                      resumeId={selectedResume.id}
+                      showScheduleInterview={true}
                     />
                   </motion.div>
                 ) : (
