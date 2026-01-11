@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Users, Loader2, CheckCircle2, X, Calendar, Briefcase, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import { ArrowLeft, Users, Loader2, CheckCircle2, X, Calendar, Briefcase, ChevronDown, ChevronUp, Sparkles, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ScheduleInterviewDialog } from "@/components/ScheduleInterviewDialog";
 import { JobDescriptionTemplates } from "@/components/JobDescriptionTemplates";
+import { ComparisonCharts } from "@/components/comparison/ComparisonCharts";
 
 interface AnalyzedResume {
   id: string;
@@ -348,6 +349,30 @@ const CandidateComparison = () => {
             </CollapsibleContent>
           </Collapsible>
         </motion.div>
+
+        {/* Visual Charts Section */}
+        {selectedResumes.length >= 2 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="mb-6"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 className="w-5 h-5 text-primary" />
+              <h2 className="text-lg font-semibold text-foreground">Visual Comparison</h2>
+            </div>
+            <ComparisonCharts
+              candidates={selectedResumes.map(resume => ({
+                id: resume.id,
+                name: resume.candidate_name || resume.file_name.slice(0, 15),
+                scores: parseScores(resume.analysis_result),
+                overallScore: resume.ai_score,
+                color: "",
+              }))}
+            />
+          </motion.div>
+        )}
 
         {/* Comparison Grid */}
         {selectedResumes.length === 0 ? (
