@@ -12,6 +12,7 @@ import ResumeHistory from "./pages/ResumeHistory";
 import JobMatching from "./pages/JobMatching";
 import CandidateComparison from "./pages/CandidateComparison";
 import TalentPipeline from "./pages/TalentPipeline";
+import Interviews from "./pages/Interviews";
 import Teams from "./pages/Teams";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/job-matching" element={<ProtectedRoute><JobMatching /></ProtectedRoute>} />
             <Route path="/compare-candidates" element={<ProtectedRoute><CandidateComparison /></ProtectedRoute>} />
             <Route path="/talent-pipeline" element={<ProtectedRoute><TalentPipeline /></ProtectedRoute>} />
+            <Route path="/interviews" element={<ProtectedRoute><Interviews /></ProtectedRoute>} />
             <Route path="/teams" element={<ProtectedRoute><Teams /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/creators" element={<Creators />} />
