@@ -132,7 +132,17 @@ const BulkResumeUpload = ({ jobDescription }: BulkResumeUploadProps) => {
 
     const nameMatch = analysis.match(/(?:Name|Candidate):\s*([^\n]+)/i);
     const emailMatch = analysis.match(/(?:Email):\s*([^\n]+)/i);
-    const scoreMatch = analysis.match(/(?:Score|Rating):\s*(\d+)/i);
+    const scoreMatch = analysis.match(/(?:HIRING\s*SCORE|Score|Rating):\s*(\d+)/i);
+    
+    // Extract role category
+    const roleCategoryMatch = analysis.match(/\*\*ROLE_CATEGORY:\*\*\s*\[?\s*([a-zA-Z]+)\s*\]?/i) ||
+                               analysis.match(/ROLE_CATEGORY:\s*\[?\s*([a-zA-Z]+)\s*\]?/i);
+    const roleSubcategoryMatch = analysis.match(/\*\*ROLE_SUBCATEGORY:\*\*\s*\[?\s*([^\n\]]+)\s*\]?/i) ||
+                                  analysis.match(/ROLE_SUBCATEGORY:\s*\[?\s*([^\n\]]+)\s*\]?/i);
+    
+    const roleCategory = roleCategoryMatch?.[1]?.trim().toLowerCase() || null;
+    const roleSubcategory = roleSubcategoryMatch?.[1]?.trim() || null;
+    const aiScore = scoreMatch ? parseInt(scoreMatch[1]) : null;
 
     await supabase.from("analyzed_resumes").insert({
       user_id: user.id,
@@ -140,8 +150,31 @@ const BulkResumeUpload = ({ jobDescription }: BulkResumeUploadProps) => {
       candidate_name: nameMatch?.[1]?.trim() || null,
       candidate_email: emailMatch?.[1]?.trim() || null,
       analysis_result: analysis,
-      ai_score: scoreMatch ? parseInt(scoreMatch[1]) : null,
+      ai_score: aiScore,
+      role_category: roleCategory,
+      role_subcategory: roleSubcategory,
     });
+  };
+
+  // Update ranks for all resumes after bulk processing
+  const updateRanks = async () => {
+    if (!user) return;
+    
+    const { data: resumes } = await supabase
+      .from("analyzed_resumes")
+      .select("id, ai_score")
+      .eq("user_id", user.id)
+      .not("ai_score", "is", null)
+      .order("ai_score", { ascending: false });
+    
+    if (resumes) {
+      for (let i = 0; i < resumes.length; i++) {
+        await supabase
+          .from("analyzed_resumes")
+          .update({ rank: i + 1 })
+          .eq("id", resumes[i].id);
+      }
+    }
   };
 
   const sendNotificationEmail = async (completedCount: number) => {
@@ -223,10 +256,13 @@ const BulkResumeUpload = ({ jobDescription }: BulkResumeUploadProps) => {
     }
 
     if (completedCount > 0) {
+      // Update ranks after all resumes are processed
+      await updateRanks();
+      
       await sendNotificationEmail(completedCount);
       toast({
         title: "Bulk Analysis Complete",
-        description: `Successfully analyzed ${completedCount} resume${completedCount > 1 ? "s" : ""}`,
+        description: `Successfully analyzed ${completedCount} resume${completedCount > 1 ? "s" : ""} with auto-ranking`,
       });
     }
 
