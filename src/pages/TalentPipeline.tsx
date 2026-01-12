@@ -3,11 +3,11 @@ import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, Users, Loader2, Plus, Calendar, MoreVertical,
-  ChevronRight, UserPlus, Clock, CheckCircle, XCircle, Briefcase, MessageSquare, Star, ClipboardList
+  ChevronRight, UserPlus, Clock, CheckCircle, XCircle, Briefcase, MessageSquare, Star, ClipboardList, Mail
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -22,6 +22,7 @@ import { CandidateRatings } from "@/components/collaboration/CandidateRatings";
 import { CalendarExportMenu } from "@/components/CalendarExportMenu";
 import { InterviewFeedbackForm } from "@/components/InterviewFeedbackForm";
 import { InterviewFeedbackSummary } from "@/components/InterviewFeedbackSummary";
+import { PipelineEmailDialog } from "@/components/PipelineEmailDialog";
 
 type CandidateStage = "new" | "screening" | "interview_scheduled" | "interviewed" | "offer" | "hired" | "rejected";
 
@@ -419,38 +420,49 @@ const TalentPipeline = () => {
                             </div>
                           )}
                         </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <MoreVertical className="w-3 h-3" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            {STAGES.filter(s => s.key !== stage.key).map((s) => (
-                              <DropdownMenuItem key={s.key} onClick={(e) => {
-                                e.stopPropagation();
-                                updateStage(candidate.id, s.key);
-                              }}>
-                                <ChevronRight className="w-3 h-3 mr-2" />
-                                Move to {s.label}
+                        <div className="flex items-center gap-1">
+                          {/* Email Action */}
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <PipelineEmailDialog
+                              candidateName={candidate.candidate_name}
+                              candidateEmail={candidate.candidate_email}
+                              currentStage={stage.key}
+                            />
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MoreVertical className="w-3 h-3" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {STAGES.filter(s => s.key !== stage.key).map((s) => (
+                                <DropdownMenuItem key={s.key} onClick={(e) => {
+                                  e.stopPropagation();
+                                  updateStage(candidate.id, s.key);
+                                }}>
+                                  <ChevronRight className="w-3 h-3 mr-2" />
+                                  Move to {s.label}
+                                </DropdownMenuItem>
+                              ))}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                className="text-destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteCandidate(candidate.id);
+                                }}
+                              >
+                                Remove
                               </DropdownMenuItem>
-                            ))}
-                            <DropdownMenuItem 
-                              className="text-destructive"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteCandidate(candidate.id);
-                              }}
-                            >
-                              Remove
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
                     </div>
                   ))}

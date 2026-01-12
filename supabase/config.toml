@@ -17,3 +17,9 @@ verify_jwt = false
 
 [functions.send-contact-email]
 verify_jwt = false
+
+[functions.send-interview-confirmation]
+verify_jwt = true
+
+[functions.send-hiring-stage-email]
+verify_jwt = false
