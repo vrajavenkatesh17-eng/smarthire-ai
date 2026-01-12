@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Sparkles, LayoutDashboard, FileText, LogIn, LogOut, History, User } from "lucide-react";
+import { Menu, X, Sparkles, LayoutDashboard, FileText, LogIn, LogOut, History, User, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -134,6 +134,20 @@ const Navbar = () => {
                 </Button>
               </Link>
             </motion.div>
+            {user && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.36 }}
+              >
+                <Link to="/interviews">
+                  <Button variant="ghost" size="sm" className="gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Interviews
+                  </Button>
+                </Link>
+              </motion.div>
+            )}
             {user && (
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
@@ -275,6 +289,14 @@ const Navbar = () => {
                     Dashboard
                   </Button>
                 </Link>
+                {user && (
+                  <Link to="/interviews" onClick={() => setIsOpen(false)}>
+                    <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
+                      <Calendar className="w-4 h-4" />
+                      Interviews
+                    </Button>
+                  </Link>
+                )}
                 {user && (
                   <Link to="/profile" onClick={() => setIsOpen(false)}>
                     <Button variant="ghost" size="sm" className="w-full justify-start gap-2">

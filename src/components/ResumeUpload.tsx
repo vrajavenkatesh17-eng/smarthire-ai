@@ -176,10 +176,33 @@ const ResumeUpload = ({ onAnalysisComplete, jobDescription }: ResumeUploadProps)
     setIsSaving(true);
 
     try {
-      // Extract candidate name from analysis if possible
+      // Extract candidate info from analysis
       const nameMatch = analysis.match(/(?:Name|Candidate):\s*([^\n]+)/i);
       const emailMatch = analysis.match(/(?:Email):\s*([^\n]+)/i);
-      const scoreMatch = analysis.match(/(?:Score|Rating):\s*(\d+)/i);
+      const scoreMatch = analysis.match(/(?:HIRING\s*SCORE|Score|Rating):\s*(\d+)/i);
+      
+      // Extract role category
+      const roleCategoryMatch = analysis.match(/\*\*ROLE_CATEGORY:\*\*\s*\[?\s*([a-zA-Z]+)\s*\]?/i) ||
+                                 analysis.match(/ROLE_CATEGORY:\s*\[?\s*([a-zA-Z]+)\s*\]?/i);
+      const roleSubcategoryMatch = analysis.match(/\*\*ROLE_SUBCATEGORY:\*\*\s*\[?\s*([^\n\]]+)\s*\]?/i) ||
+                                    analysis.match(/ROLE_SUBCATEGORY:\s*\[?\s*([^\n\]]+)\s*\]?/i);
+      
+      const roleCategory = roleCategoryMatch?.[1]?.trim().toLowerCase() || null;
+      const roleSubcategory = roleSubcategoryMatch?.[1]?.trim() || null;
+      const aiScore = scoreMatch ? parseInt(scoreMatch[1]) : null;
+
+      // Calculate rank based on score (will be updated when fetching all resumes)
+      let rank = null;
+      if (aiScore) {
+        // Get count of resumes with higher score for ranking
+        const { count } = await supabase
+          .from("analyzed_resumes")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .gt("ai_score", aiScore);
+        
+        rank = (count || 0) + 1;
+      }
 
       const { error: saveError } = await supabase.from("analyzed_resumes").insert({
         user_id: user.id,
@@ -187,7 +210,10 @@ const ResumeUpload = ({ onAnalysisComplete, jobDescription }: ResumeUploadProps)
         candidate_name: nameMatch?.[1]?.trim() || null,
         candidate_email: emailMatch?.[1]?.trim() || null,
         analysis_result: analysis,
-        ai_score: scoreMatch ? parseInt(scoreMatch[1]) : null,
+        ai_score: aiScore,
+        role_category: roleCategory,
+        role_subcategory: roleSubcategory,
+        rank: rank,
       });
 
       if (saveError) throw saveError;
