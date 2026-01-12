@@ -158,6 +158,9 @@ const TalentPipeline = () => {
   };
 
   const updateStage = async (candidateId: string, newStage: CandidateStage) => {
+    const candidate = candidates.find(c => c.id === candidateId);
+    const oldStage = candidate?.stage;
+    
     try {
       const { error } = await supabase
         .from("candidate_pipeline")
@@ -165,6 +168,22 @@ const TalentPipeline = () => {
         .eq("id", candidateId);
 
       if (error) throw error;
+
+      // Log the stage change to pipeline_activities
+      if (user && candidate) {
+        const stageLabel = STAGES.find(s => s.key === newStage)?.label || newStage;
+        const oldStageLabel = STAGES.find(s => s.key === oldStage)?.label || oldStage;
+        
+        await supabase.from("pipeline_activities").insert({
+          user_id: user.id,
+          candidate_id: candidateId,
+          candidate_name: candidate.candidate_name,
+          activity_type: "stage_change",
+          old_stage: oldStageLabel,
+          new_stage: stageLabel,
+          description: `${candidate.candidate_name} moved from ${oldStageLabel} to ${stageLabel}`,
+        });
+      }
 
       setCandidates(candidates.map(c => 
         c.id === candidateId ? { ...c, stage: newStage } : c

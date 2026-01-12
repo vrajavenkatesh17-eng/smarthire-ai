@@ -23,6 +23,9 @@ export type Database = {
           created_at: string
           file_name: string
           id: string
+          rank: number | null
+          role_category: string | null
+          role_subcategory: string | null
           user_id: string
         }
         Insert: {
@@ -33,6 +36,9 @@ export type Database = {
           created_at?: string
           file_name: string
           id?: string
+          rank?: number | null
+          role_category?: string | null
+          role_subcategory?: string | null
           user_id: string
         }
         Update: {
@@ -43,6 +49,9 @@ export type Database = {
           created_at?: string
           file_name?: string
           id?: string
+          rank?: number | null
+          role_category?: string | null
+          role_subcategory?: string | null
           user_id?: string
         }
         Relationships: []

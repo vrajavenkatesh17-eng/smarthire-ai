@@ -101,6 +101,26 @@ Your analysis should include:
 7. **Potential Concerns**: Any gaps or areas for interview focus
 8. **Interview Recommendations**: 3 specific questions to ask this candidate
 
+## 🏷️ ROLE CATEGORIZATION (CRITICAL - ALWAYS INCLUDE)
+You MUST categorize the candidate into one of these role categories based on their experience and skills:
+
+**ROLE_CATEGORY:** [Choose ONE: frontend | backend | fullstack | devops | data | design | product | mobile | security | qa | other]
+
+**ROLE_SUBCATEGORY:** [Be more specific, e.g., "React Developer", "Python Backend Engineer", "ML Engineer", "UI/UX Designer", "Product Manager", "iOS Developer", etc.]
+
+Role category definitions:
+- **frontend**: React, Vue, Angular, CSS, JavaScript, web development focused
+- **backend**: Node.js, Python, Java, Go, APIs, databases, server-side focused
+- **fullstack**: Both frontend and backend experience
+- **devops**: AWS, Docker, Kubernetes, CI/CD, infrastructure
+- **data**: Data Science, ML, AI, Analytics, SQL, Python for data
+- **design**: UI/UX, Figma, Design Systems, Visual Design
+- **product**: Product Management, Strategy, Roadmaps
+- **mobile**: iOS, Android, React Native, Flutter
+- **security**: Cybersecurity, Penetration Testing, Security Engineering
+- **qa**: Quality Assurance, Testing, Test Automation
+- **other**: Any role that doesn't fit above categories
+
 ## 🎯 HIRING POSSIBILITY SCORE (CRITICAL - ALWAYS INCLUDE)
 At the end of your analysis, you MUST provide a clear hiring score:
 
@@ -118,7 +138,7 @@ Provide a brief explanation of the score and a final recommendation: Strong Hire
 
 ${jobDescription ? `\nJob Description for context:\n${jobDescription}` : ''}
 
-Format your response with clear headers and emojis for readability. Be objective and professional. ALWAYS end with the HIRING SCORE section.`;
+Format your response with clear headers and emojis for readability. Be objective and professional. ALWAYS end with the HIRING SCORE section and ALWAYS include the ROLE_CATEGORY and ROLE_SUBCATEGORY.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
