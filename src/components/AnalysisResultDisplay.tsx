@@ -29,6 +29,62 @@ const AnalysisResultDisplay = ({
 }: AnalysisResultDisplayProps) => {
   const { user } = useAuth();
   
+  // Extract candidate name from analysis text
+  const extractCandidateName = (text: string): string | null => {
+    // Try multiple patterns for name extraction
+    const patterns = [
+      /\*\*CANDIDATE_NAME:\*\*\s*\[?\s*([^\]\n*]+)/i,
+      /CANDIDATE_NAME:\s*\[?\s*([^\]\n]+)/i,
+      /\*\*Name:\*\*\s*([^\n]+)/i,
+      /Name:\s*([^\n]+)/i,
+      /Candidate:\s*([^\n]+)/i,
+    ];
+    
+    for (const pattern of patterns) {
+      const match = text.match(pattern);
+      if (match && match[1]) {
+        const name = match[1].replace(/\*+/g, '').trim();
+        if (name && name.length > 1 && name.toLowerCase() !== 'not provided' && name !== '[Full name as written in the resume]') {
+          return name;
+        }
+      }
+    }
+    return null;
+  };
+
+  // Extract candidate email from analysis text
+  const extractCandidateEmail = (text: string): string | null => {
+    // Try specific patterns first
+    const patterns = [
+      /\*\*CANDIDATE_EMAIL:\*\*\s*\[?\s*([^\]\n*]+)/i,
+      /CANDIDATE_EMAIL:\s*\[?\s*([^\]\n]+)/i,
+      /\*\*Email:\*\*\s*([^\n]+)/i,
+      /Email:\s*([^\s\n]+@[^\s\n]+)/i,
+    ];
+    
+    for (const pattern of patterns) {
+      const match = text.match(pattern);
+      if (match && match[1]) {
+        const email = match[1].replace(/\*+/g, '').trim();
+        // Validate it looks like an email
+        if (email && email.includes('@') && email.includes('.') && 
+            email.toLowerCase() !== 'not provided' && 
+            !email.includes('[')) {
+          return email;
+        }
+      }
+    }
+    
+    // Fallback: search for any email pattern in the text
+    const emailPattern = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+    const emailMatch = text.match(emailPattern);
+    if (emailMatch) {
+      return emailMatch[0];
+    }
+    
+    return null;
+  };
+
   // Parse sections from the analysis text
   const parseSection = (text: string, sectionName: string): string => {
     const regex = new RegExp(`(?:#{1,3}\\s*)?(?:\\*{1,2})?(?:🎯|📊|💼|🎓|💡|⚠️|❓|✨)?\\s*${sectionName}[^:]*[:]*(.+?)(?=(?:#{1,3}\\s*)?(?:\\*{1,2})?(?:🎯|📊|💼|🎓|💡|⚠️|❓|✨)?\\s*(?:Candidate|Skills|Experience|Education|Scoring|Strengths|Potential|Interview|Hiring|$))`, 'is');
@@ -40,6 +96,10 @@ const AnalysisResultDisplay = ({
     const scoreMatch = text.match(/(?:HIRING\s*SCORE|Overall\s*Score|Score)[:\s]*(\d+)(?:\s*\/\s*100)?/i);
     return scoreMatch ? parseInt(scoreMatch[1]) : aiScore;
   };
+
+  // Use extracted values if props are not provided
+  const displayName = candidateName || extractCandidateName(analysis);
+  const displayEmail = candidateEmail || extractCandidateEmail(analysis);
 
   const extractRecommendation = (text: string): string | null => {
     const recMatch = text.match(/(?:recommendation|verdict)[:\s]*(Strong\s*Hire|Hire|Consider|Pass)/i);
@@ -143,17 +203,17 @@ const AnalysisResultDisplay = ({
         {/* Candidate Info */}
         <div className="flex items-start gap-4">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-primary-foreground text-2xl font-bold">
-            {candidateName ? candidateName.charAt(0).toUpperCase() : <User className="w-8 h-8" />}
+            {displayName ? displayName.charAt(0).toUpperCase() : <User className="w-8 h-8" />}
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-2xl font-bold text-foreground mb-1">
-              {candidateName || "Candidate"}
+              {displayName || "Candidate"}
             </h2>
-            {candidateEmail && (
+            {displayEmail && (
               <div className="flex items-center gap-2 text-muted-foreground mb-3">
                 <Mail className="w-4 h-4" />
-                <a href={`mailto:${candidateEmail}`} className="hover:text-primary transition-colors text-sm">
-                  {candidateEmail}
+                <a href={`mailto:${displayEmail}`} className="hover:text-primary transition-colors text-sm">
+                  {displayEmail}
                 </a>
               </div>
             )}
@@ -175,8 +235,8 @@ const AnalysisResultDisplay = ({
                 {/* Schedule Interview Button */}
                 {showScheduleInterview && user && (
                   <ScheduleInterviewDialog
-                    candidateName={candidateName || "Candidate"}
-                    candidateEmail={candidateEmail}
+                    candidateName={displayName || "Candidate"}
+                    candidateEmail={displayEmail}
                     resumeId={resumeId}
                     userId={user.id}
                     trigger={
@@ -193,8 +253,8 @@ const AnalysisResultDisplay = ({
             {/* Show schedule button even without recommendation */}
             {!recommendation && showScheduleInterview && user && (
               <ScheduleInterviewDialog
-                candidateName={candidateName || "Candidate"}
-                candidateEmail={candidateEmail}
+                candidateName={displayName || "Candidate"}
+                candidateEmail={displayEmail}
                 resumeId={resumeId}
                 userId={user.id}
                 trigger={

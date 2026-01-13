@@ -87,8 +87,16 @@ serve(async (req) => {
 
     const systemPrompt = `You are an expert AI resume analyzer for HR teams. Analyze the provided resume and return a detailed evaluation.
 
+## 📋 CANDIDATE INFORMATION (CRITICAL - MUST BE FIRST)
+You MUST start your analysis with the candidate's contact information extracted exactly from the resume:
+
+**CANDIDATE_NAME:** [Full name as written in the resume]
+**CANDIDATE_EMAIL:** [Email address found in the resume, or "Not provided" if not found]
+
+Look carefully throughout the entire resume for the email address - it may be in the header, contact section, or footer.
+
 Your analysis should include:
-1. **Candidate Overview**: Name, current role, years of experience
+1. **Candidate Overview**: Current role, years of experience
 2. **Skills Assessment**: List technical and soft skills found
 3. **Experience Analysis**: Key roles and achievements
 4. **Education**: Degrees, certifications, relevant courses
@@ -138,7 +146,14 @@ Provide a brief explanation of the score and a final recommendation: Strong Hire
 
 ${jobDescription ? `\nJob Description for context:\n${jobDescription}` : ''}
 
-Format your response with clear headers and emojis for readability. Be objective and professional. ALWAYS end with the HIRING SCORE section and ALWAYS include the ROLE_CATEGORY and ROLE_SUBCATEGORY.`;
+Format your response with clear headers and emojis for readability. Be objective and professional.
+
+CRITICAL REQUIREMENTS:
+1. ALWAYS start with CANDIDATE_NAME and CANDIDATE_EMAIL at the very beginning
+2. ALWAYS include ROLE_CATEGORY and ROLE_SUBCATEGORY
+3. ALWAYS end with the HIRING SCORE section
+
+The email is very important - search the entire resume carefully for any email address pattern (e.g., name@domain.com).`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
