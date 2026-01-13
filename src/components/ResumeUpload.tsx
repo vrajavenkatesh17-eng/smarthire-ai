@@ -176,9 +176,56 @@ const ResumeUpload = ({ onAnalysisComplete, jobDescription }: ResumeUploadProps)
     setIsSaving(true);
 
     try {
-      // Extract candidate info from analysis
-      const nameMatch = analysis.match(/(?:Name|Candidate):\s*([^\n]+)/i);
-      const emailMatch = analysis.match(/(?:Email):\s*([^\n]+)/i);
+      // Extract candidate info from analysis using improved patterns
+      const namePatterns = [
+        /\*\*CANDIDATE_NAME:\*\*\s*\[?\s*([^\]\n*]+)/i,
+        /CANDIDATE_NAME:\s*\[?\s*([^\]\n]+)/i,
+        /\*\*Name:\*\*\s*([^\n]+)/i,
+        /(?:Name|Candidate):\s*([^\n]+)/i,
+      ];
+      
+      let candidateName: string | null = null;
+      for (const pattern of namePatterns) {
+        const match = analysis.match(pattern);
+        if (match && match[1]) {
+          const name = match[1].replace(/\*+/g, '').trim();
+          if (name && name.length > 1 && name.toLowerCase() !== 'not provided' && !name.includes('[')) {
+            candidateName = name;
+            break;
+          }
+        }
+      }
+
+      // Extract email with multiple patterns
+      const emailPatterns = [
+        /\*\*CANDIDATE_EMAIL:\*\*\s*\[?\s*([^\]\n*]+)/i,
+        /CANDIDATE_EMAIL:\s*\[?\s*([^\]\n]+)/i,
+        /\*\*Email:\*\*\s*([^\n]+)/i,
+        /Email:\s*([^\s\n]+@[^\s\n]+)/i,
+      ];
+      
+      let candidateEmail: string | null = null;
+      for (const pattern of emailPatterns) {
+        const match = analysis.match(pattern);
+        if (match && match[1]) {
+          const email = match[1].replace(/\*+/g, '').trim();
+          if (email && email.includes('@') && email.includes('.') && 
+              email.toLowerCase() !== 'not provided' && !email.includes('[')) {
+            candidateEmail = email;
+            break;
+          }
+        }
+      }
+      
+      // Fallback: search for any email pattern in the analysis
+      if (!candidateEmail) {
+        const emailPattern = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+        const emailMatch = analysis.match(emailPattern);
+        if (emailMatch) {
+          candidateEmail = emailMatch[0];
+        }
+      }
+
       const scoreMatch = analysis.match(/(?:HIRING\s*SCORE|Score|Rating):\s*(\d+)/i);
       
       // Extract role category
@@ -186,7 +233,7 @@ const ResumeUpload = ({ onAnalysisComplete, jobDescription }: ResumeUploadProps)
                                  analysis.match(/ROLE_CATEGORY:\s*\[?\s*([a-zA-Z]+)\s*\]?/i);
       const roleSubcategoryMatch = analysis.match(/\*\*ROLE_SUBCATEGORY:\*\*\s*\[?\s*([^\n\]]+)\s*\]?/i) ||
                                     analysis.match(/ROLE_SUBCATEGORY:\s*\[?\s*([^\n\]]+)\s*\]?/i);
-      
+
       const roleCategory = roleCategoryMatch?.[1]?.trim().toLowerCase() || null;
       const roleSubcategory = roleSubcategoryMatch?.[1]?.trim() || null;
       const aiScore = scoreMatch ? parseInt(scoreMatch[1]) : null;
@@ -207,8 +254,8 @@ const ResumeUpload = ({ onAnalysisComplete, jobDescription }: ResumeUploadProps)
       const { error: saveError } = await supabase.from("analyzed_resumes").insert({
         user_id: user.id,
         file_name: file.name,
-        candidate_name: nameMatch?.[1]?.trim() || null,
-        candidate_email: emailMatch?.[1]?.trim() || null,
+        candidate_name: candidateName,
+        candidate_email: candidateEmail,
         analysis_result: analysis,
         ai_score: aiScore,
         role_category: roleCategory,
