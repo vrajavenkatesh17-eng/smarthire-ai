@@ -6,6 +6,27 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// HTML escape function to prevent XSS in email templates
+const escapeHtml = (text: string): string => {
+  if (!text) return "";
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
+
+// URL validation function
+const isValidUrl = (str: string): boolean => {
+  try {
+    const url = new URL(str);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+};
+
 interface InterviewConfirmationRequest {
   candidateName: string;
   candidateEmail: string;
@@ -81,6 +102,24 @@ const handler = async (req: Request): Promise<Response> => {
     const typeLabel = getInterviewTypeLabel(interviewType);
     const typeColor = getInterviewTypeColor(interviewType);
 
+    // Escape all user-provided data
+    const safeCandidateName = escapeHtml(candidateName);
+    const safeInterviewDate = escapeHtml(interviewDate);
+    const safeInterviewTime = escapeHtml(interviewTime);
+    const safeInterviewerName = interviewerName ? escapeHtml(interviewerName) : null;
+    const safeNotes = notes ? escapeHtml(notes) : null;
+    
+    // Handle location with URL validation
+    let safeLocationHtml = "";
+    if (location) {
+      if (isValidUrl(location)) {
+        const escapedLocation = escapeHtml(location);
+        safeLocationHtml = `<a href="${escapedLocation}" style="color: ${typeColor};">${escapedLocation}</a>`;
+      } else {
+        safeLocationHtml = escapeHtml(location);
+      }
+    }
+
     const emailHtml = `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
         <div style="background: linear-gradient(135deg, ${typeColor}, ${typeColor}dd); padding: 40px 30px; border-radius: 16px 16px 0 0; text-align: center;">
@@ -90,7 +129,7 @@ const handler = async (req: Request): Promise<Response> => {
         
         <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 16px 16px;">
           <p style="color: #334155; font-size: 16px; margin-bottom: 20px;">
-            Hi <strong>${candidateName}</strong>,
+            Hi <strong>${safeCandidateName}</strong>,
           </p>
           
           <p style="color: #334155; font-size: 16px; margin-bottom: 25px;">
@@ -101,11 +140,11 @@ const handler = async (req: Request): Promise<Response> => {
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
                 <td style="padding: 8px 0; color: #64748b; width: 130px;">📅 Date</td>
-                <td style="padding: 8px 0; color: #1e293b; font-weight: 500;">${interviewDate}</td>
+                <td style="padding: 8px 0; color: #1e293b; font-weight: 500;">${safeInterviewDate}</td>
               </tr>
               <tr>
                 <td style="padding: 8px 0; color: #64748b;">⏰ Time</td>
-                <td style="padding: 8px 0; color: #1e293b; font-weight: 500;">${interviewTime}</td>
+                <td style="padding: 8px 0; color: #1e293b; font-weight: 500;">${safeInterviewTime}</td>
               </tr>
               <tr>
                 <td style="padding: 8px 0; color: #64748b;">⏱️ Duration</td>
@@ -115,27 +154,27 @@ const handler = async (req: Request): Promise<Response> => {
                 <td style="padding: 8px 0; color: #64748b;">💼 Type</td>
                 <td style="padding: 8px 0; color: #1e293b; font-weight: 500;">${typeLabel}</td>
               </tr>
-              ${interviewerName ? `
+              ${safeInterviewerName ? `
               <tr>
                 <td style="padding: 8px 0; color: #64748b;">👤 Interviewer</td>
-                <td style="padding: 8px 0; color: #1e293b; font-weight: 500;">${interviewerName}</td>
+                <td style="padding: 8px 0; color: #1e293b; font-weight: 500;">${safeInterviewerName}</td>
               </tr>
               ` : ""}
               ${location ? `
               <tr>
                 <td style="padding: 8px 0; color: #64748b;">📍 Location</td>
                 <td style="padding: 8px 0; color: #1e293b; font-weight: 500;">
-                  ${location.startsWith("http") ? `<a href="${location}" style="color: ${typeColor};">${location}</a>` : location}
+                  ${safeLocationHtml}
                 </td>
               </tr>
               ` : ""}
             </table>
           </div>
           
-          ${notes ? `
+          ${safeNotes ? `
           <div style="background: #fffbeb; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #fef3c7;">
             <p style="color: #92400e; margin: 0; font-size: 14px;"><strong>📝 Additional Notes:</strong></p>
-            <p style="color: #78350f; margin: 8px 0 0 0; font-size: 14px;">${notes}</p>
+            <p style="color: #78350f; margin: 8px 0 0 0; font-size: 14px;">${safeNotes}</p>
           </div>
           ` : ""}
           

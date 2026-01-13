@@ -8,6 +8,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// HTML escape function to prevent XSS in email templates
+const escapeHtml = (text: string): string => {
+  if (!text) return "";
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
+
 interface ContactEmailRequest {
   name: string;
   email: string;
@@ -75,15 +86,15 @@ const handler = async (req: Request): Promise<Response> => {
             <div class="content">
               <div class="field">
                 <div class="label">From</div>
-                <div class="value">${name} (${email})</div>
+                <div class="value">${escapeHtml(name)} (${escapeHtml(email)})</div>
               </div>
               <div class="field">
                 <div class="label">Subject</div>
-                <div class="value">${subject || "General Inquiry"}</div>
+                <div class="value">${escapeHtml(subject || "General Inquiry")}</div>
               </div>
               <div class="field">
                 <div class="label">Message</div>
-                <div class="message-box">${message.replace(/\n/g, "<br>")}</div>
+                <div class="message-box">${escapeHtml(message).replace(/\n/g, "<br>")}</div>
               </div>
             </div>
           </div>
@@ -114,11 +125,11 @@ const handler = async (req: Request): Promise<Response> => {
         <body>
           <div class="container">
             <div class="header">
-              <h1 style="margin: 0; font-size: 28px;">Thank You, ${name}! 🙏</h1>
+              <h1 style="margin: 0; font-size: 28px;">Thank You, ${escapeHtml(name)}! 🙏</h1>
               <p style="margin: 10px 0 0; opacity: 0.9;">We've received your message</p>
             </div>
             <div class="content">
-              <p>Hi ${name},</p>
+              <p>Hi ${escapeHtml(name)},</p>
               <p>Thank you for reaching out to the ResumeAI team! We've received your message and will get back to you as soon as possible, typically within 24 hours.</p>
               <p>In the meantime, feel free to explore our platform and discover how AI can transform your hiring process.</p>
               <p>Best regards,<br><strong>The ResumeAI Team</strong></p>

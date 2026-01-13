@@ -6,6 +6,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// HTML escape function to prevent XSS in email templates
+const escapeHtml = (text: string): string => {
+  if (!text) return "";
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
+
 interface EmailRequest {
   candidateName: string;
   candidateEmail: string;
@@ -25,8 +36,12 @@ interface EmailRequest {
 }
 
 const getEmailTemplate = (data: EmailRequest) => {
-  const company = data.companyName || "Our Company";
-  const position = data.position || "the position";
+  const company = escapeHtml(data.companyName || "Our Company");
+  const position = escapeHtml(data.position || "the position");
+  const candidateName = escapeHtml(data.candidateName);
+  const salary = data.salary ? escapeHtml(data.salary) : null;
+  const startDate = data.startDate ? escapeHtml(data.startDate) : null;
+  const customMessage = data.customMessage ? escapeHtml(data.customMessage) : null;
   
   switch (data.emailType) {
     case "rejection":
@@ -38,7 +53,7 @@ const getEmailTemplate = (data: EmailRequest) => {
               <h1 style="color: white; margin: 0; font-size: 24px;">Application Update</h1>
             </div>
             <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 12px 12px;">
-              <p style="color: #334155; font-size: 16px;">Dear ${data.candidateName},</p>
+              <p style="color: #334155; font-size: 16px;">Dear ${candidateName},</p>
               
               <p style="color: #334155; font-size: 16px;">
                 Thank you for taking the time to apply for ${position} at ${company} and for your interest in joining our team.
@@ -52,9 +67,9 @@ const getEmailTemplate = (data: EmailRequest) => {
                 This was not an easy decision as we received many impressive applications. We were genuinely impressed by your background and experience.
               </p>
               
-              ${data.customMessage ? `
+              ${customMessage ? `
                 <div style="background: #e2e8f0; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                  <p style="color: #334155; margin: 0; font-style: italic;">"${data.customMessage}"</p>
+                  <p style="color: #334155; margin: 0; font-style: italic;">"${customMessage}"</p>
                 </div>
               ` : ''}
               
@@ -80,7 +95,7 @@ const getEmailTemplate = (data: EmailRequest) => {
               <h1 style="color: white; margin: 0; font-size: 24px;">🎉 Congratulations!</h1>
             </div>
             <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 12px 12px;">
-              <p style="color: #334155; font-size: 16px;">Dear ${data.candidateName},</p>
+              <p style="color: #334155; font-size: 16px;">Dear ${candidateName},</p>
               
               <p style="color: #334155; font-size: 16px;">
                 We are thrilled to extend an offer for the position of <strong>${position}</strong> at ${company}!
@@ -89,17 +104,17 @@ const getEmailTemplate = (data: EmailRequest) => {
               <div style="background: white; border-left: 4px solid #10b981; padding: 20px; margin: 20px 0; border-radius: 8px;">
                 <h3 style="color: #059669; margin-top: 0;">Offer Details</h3>
                 <p style="margin: 8px 0;"><strong>Position:</strong> ${position}</p>
-                ${data.salary ? `<p style="margin: 8px 0;"><strong>Compensation:</strong> ${data.salary}</p>` : ''}
-                ${data.startDate ? `<p style="margin: 8px 0;"><strong>Proposed Start Date:</strong> ${data.startDate}</p>` : ''}
+                ${salary ? `<p style="margin: 8px 0;"><strong>Compensation:</strong> ${salary}</p>` : ''}
+                ${startDate ? `<p style="margin: 8px 0;"><strong>Proposed Start Date:</strong> ${startDate}</p>` : ''}
               </div>
               
               <p style="color: #334155; font-size: 16px;">
                 Throughout our interview process, you demonstrated exceptional skills, experience, and cultural fit that made you stand out among all candidates.
               </p>
               
-              ${data.customMessage ? `
+              ${customMessage ? `
                 <div style="background: #ecfdf5; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                  <p style="color: #065f46; margin: 0;">${data.customMessage}</p>
+                  <p style="color: #065f46; margin: 0;">${customMessage}</p>
                 </div>
               ` : ''}
               
@@ -122,6 +137,11 @@ const getEmailTemplate = (data: EmailRequest) => {
 
     case "interview_confirmation":
       const interview = data.interviewDetails;
+      const interviewDate = interview?.date ? escapeHtml(interview.date) : null;
+      const interviewTime = interview?.time ? escapeHtml(interview.time) : null;
+      const interviewType = interview?.type ? escapeHtml(interview.type) : null;
+      const interviewLocation = interview?.location ? escapeHtml(interview.location) : null;
+      const interviewerName = interview?.interviewerName ? escapeHtml(interview.interviewerName) : null;
       return {
         subject: `Interview Confirmation - ${position} at ${company}`,
         html: `
@@ -130,7 +150,7 @@ const getEmailTemplate = (data: EmailRequest) => {
               <h1 style="color: white; margin: 0; font-size: 24px;">📅 Interview Confirmed</h1>
             </div>
             <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 12px 12px;">
-              <p style="color: #334155; font-size: 16px;">Dear ${data.candidateName},</p>
+              <p style="color: #334155; font-size: 16px;">Dear ${candidateName},</p>
               
               <p style="color: #334155; font-size: 16px;">
                 We're pleased to confirm your interview for the ${position} position at ${company}.
@@ -139,11 +159,11 @@ const getEmailTemplate = (data: EmailRequest) => {
               ${interview ? `
                 <div style="background: white; border-left: 4px solid #3b82f6; padding: 20px; margin: 20px 0; border-radius: 8px;">
                   <h3 style="color: #1d4ed8; margin-top: 0;">Interview Details</h3>
-                  <p style="margin: 8px 0;"><strong>📅 Date:</strong> ${interview.date}</p>
-                  <p style="margin: 8px 0;"><strong>⏰ Time:</strong> ${interview.time}</p>
-                  <p style="margin: 8px 0;"><strong>📋 Type:</strong> ${interview.type}</p>
-                  ${interview.location ? `<p style="margin: 8px 0;"><strong>📍 Location:</strong> ${interview.location}</p>` : ''}
-                  ${interview.interviewerName ? `<p style="margin: 8px 0;"><strong>👤 Interviewer:</strong> ${interview.interviewerName}</p>` : ''}
+                  <p style="margin: 8px 0;"><strong>📅 Date:</strong> ${interviewDate}</p>
+                  <p style="margin: 8px 0;"><strong>⏰ Time:</strong> ${interviewTime}</p>
+                  <p style="margin: 8px 0;"><strong>📋 Type:</strong> ${interviewType}</p>
+                  ${interviewLocation ? `<p style="margin: 8px 0;"><strong>📍 Location:</strong> ${interviewLocation}</p>` : ''}
+                  ${interviewerName ? `<p style="margin: 8px 0;"><strong>👤 Interviewer:</strong> ${interviewerName}</p>` : ''}
                 </div>
               ` : ''}
               
@@ -157,9 +177,9 @@ const getEmailTemplate = (data: EmailRequest) => {
                 </ul>
               </div>
               
-              ${data.customMessage ? `
+              ${customMessage ? `
                 <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                  <p style="color: #334155; margin: 0;">${data.customMessage}</p>
+                  <p style="color: #334155; margin: 0;">${customMessage}</p>
                 </div>
               ` : ''}
               
@@ -181,7 +201,7 @@ const getEmailTemplate = (data: EmailRequest) => {
               <h1 style="color: white; margin: 0; font-size: 24px;">Application Update</h1>
             </div>
             <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 12px 12px;">
-              <p style="color: #334155; font-size: 16px;">Dear ${data.candidateName},</p>
+              <p style="color: #334155; font-size: 16px;">Dear ${candidateName},</p>
               
               <p style="color: #334155; font-size: 16px;">
                 Thank you for your continued interest in the ${position} position at ${company}.
@@ -191,9 +211,9 @@ const getEmailTemplate = (data: EmailRequest) => {
                 We wanted to provide you with an update on your application status. Our team is currently reviewing all candidates and we appreciate your patience during this process.
               </p>
               
-              ${data.customMessage ? `
+              ${customMessage ? `
                 <div style="background: #f5f3ff; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                  <p style="color: #5b21b6; margin: 0;">${data.customMessage}</p>
+                  <p style="color: #5b21b6; margin: 0;">${customMessage}</p>
                 </div>
               ` : ''}
               
