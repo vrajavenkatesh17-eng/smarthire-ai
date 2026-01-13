@@ -19,11 +19,66 @@ const escapeHtml = (text: string): string => {
     .replace(/'/g, "&#039;");
 };
 
+// In-memory rate limiting store (resets on function cold start)
+// For production, consider using Deno KV or Upstash Redis
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+
+const RATE_LIMIT_MAX_REQUESTS = 5; // Max requests per window
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour window
+
+// Rate limiting function
+const checkRateLimit = (clientIp: string): { allowed: boolean; remaining: number; resetIn: number } => {
+  const now = Date.now();
+  const entry = rateLimitStore.get(clientIp);
+
+  // Clean up expired entries periodically
+  if (rateLimitStore.size > 1000) {
+    for (const [key, value] of rateLimitStore.entries()) {
+      if (now > value.resetTime) {
+        rateLimitStore.delete(key);
+      }
+    }
+  }
+
+  if (!entry || now > entry.resetTime) {
+    // Create new entry or reset expired entry
+    rateLimitStore.set(clientIp, {
+      count: 1,
+      resetTime: now + RATE_LIMIT_WINDOW_MS,
+    });
+    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1, resetIn: RATE_LIMIT_WINDOW_MS };
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX_REQUESTS) {
+    return { allowed: false, remaining: 0, resetIn: entry.resetTime - now };
+  }
+
+  // Increment count
+  entry.count++;
+  rateLimitStore.set(clientIp, entry);
+  return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - entry.count, resetIn: entry.resetTime - now };
+};
+
+// Get client IP from request headers
+const getClientIp = (req: Request): string => {
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (forwarded) {
+    return forwarded.split(",")[0].trim();
+  }
+  const realIp = req.headers.get("x-real-ip");
+  if (realIp) {
+    return realIp;
+  }
+  return "unknown";
+};
+
 interface ContactEmailRequest {
   name: string;
   email: string;
   subject?: string;
   message: string;
+  // Honeypot field - should be empty if submitted by a human
+  website?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -33,15 +88,56 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Get client IP for rate limiting
+    const clientIp = getClientIp(req);
+    
+    // Check rate limit
+    const rateLimit = checkRateLimit(clientIp);
+    if (!rateLimit.allowed) {
+      console.warn(`Rate limit exceeded for IP: ${clientIp}`);
+      return new Response(
+        JSON.stringify({ 
+          error: "Too many requests. Please try again later.",
+          retryAfter: Math.ceil(rateLimit.resetIn / 1000)
+        }),
+        { 
+          status: 429, 
+          headers: { 
+            "Content-Type": "application/json", 
+            "Retry-After": String(Math.ceil(rateLimit.resetIn / 1000)),
+            ...corsHeaders 
+          } 
+        }
+      );
+    }
+
     console.log("Processing contact form submission...");
     
-    const { name, email, subject, message }: ContactEmailRequest = await req.json();
+    const { name, email, subject, message, website }: ContactEmailRequest = await req.json();
+
+    // Honeypot check - if website field is filled, it's likely a bot
+    if (website && website.trim() !== "") {
+      console.warn(`Honeypot triggered by IP: ${clientIp}`);
+      // Return success to not reveal the honeypot to bots
+      return new Response(
+        JSON.stringify({ success: true, message: "Message received" }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
     // Validate required fields
     if (!name || !email || !message) {
       console.error("Missing required fields:", { name: !!name, email: !!email, message: !!message });
       return new Response(
         JSON.stringify({ error: "Name, email, and message are required" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Validate input lengths to prevent abuse
+    if (name.length > 100 || email.length > 255 || (subject && subject.length > 200) || message.length > 5000) {
+      return new Response(
+        JSON.stringify({ error: "Input exceeds maximum allowed length" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -56,13 +152,13 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log("Sending contact notification email...");
+    console.log(`Sending contact notification email (IP: ${clientIp}, remaining: ${rateLimit.remaining})...`);
 
     // Send notification email to the team
     const notificationResponse = await resend.emails.send({
       from: "ResumeAI Contact <onboarding@resend.dev>",
       to: ["hello@resumeai.com"], // Replace with actual team email
-      subject: `New Contact Form: ${subject || "General Inquiry"}`,
+      subject: `New Contact Form: ${escapeHtml(subject || "General Inquiry")}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -157,7 +253,7 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("Error in send-contact-email function:", error);
     return new Response(
-      JSON.stringify({ error: error.message || "Failed to send email" }),
+      JSON.stringify({ error: "Failed to send email. Please try again later." }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
