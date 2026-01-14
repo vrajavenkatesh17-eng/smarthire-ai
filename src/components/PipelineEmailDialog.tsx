@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 interface PipelineEmailDialogProps {
+  candidateId: string;
   candidateName: string;
   candidateEmail: string | null;
   currentStage: string;
@@ -25,6 +26,7 @@ const emailTypes = [
 ];
 
 export const PipelineEmailDialog = ({ 
+  candidateId,
   candidateName, 
   candidateEmail, 
   currentStage,
@@ -65,6 +67,7 @@ export const PipelineEmailDialog = ({
     try {
       const { error } = await supabase.functions.invoke("send-hiring-stage-email", {
         body: {
+          candidateId,
           candidateName,
           candidateEmail,
           emailType,

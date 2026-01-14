@@ -203,6 +203,53 @@ export type Database = {
           },
         ]
       }
+      email_logs: {
+        Row: {
+          candidate_email: string
+          candidate_id: string | null
+          candidate_name: string
+          created_at: string
+          email_type: string
+          error_message: string | null
+          id: string
+          resend_id: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          candidate_email: string
+          candidate_id?: string | null
+          candidate_name: string
+          created_at?: string
+          email_type: string
+          error_message?: string | null
+          id?: string
+          resend_id?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          candidate_email?: string
+          candidate_id?: string | null
+          candidate_name?: string
+          created_at?: string
+          email_type?: string
+          error_message?: string | null
+          id?: string
+          resend_id?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_logs_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidate_pipeline"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       interview_feedback: {
         Row: {
           additional_notes: string | null

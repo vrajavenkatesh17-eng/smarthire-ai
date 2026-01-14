@@ -23,7 +23,8 @@ import { CalendarExportMenu } from "@/components/CalendarExportMenu";
 import { InterviewFeedbackForm } from "@/components/InterviewFeedbackForm";
 import { InterviewFeedbackSummary } from "@/components/InterviewFeedbackSummary";
 import { PipelineEmailDialog } from "@/components/PipelineEmailDialog";
-
+import { BulkEmailDialog } from "@/components/BulkEmailDialog";
+import { EmailLogsList } from "@/components/EmailLogsList";
 type CandidateStage = "new" | "screening" | "interview_scheduled" | "interviewed" | "offer" | "hired" | "rejected";
 
 interface PipelineCandidate {
@@ -248,6 +249,14 @@ const TalentPipeline = () => {
               </div>
             </div>
             <div className="flex gap-2">
+              <BulkEmailDialog 
+                candidates={candidates.map(c => ({
+                  id: c.id,
+                  candidate_name: c.candidate_name,
+                  candidate_email: c.candidate_email,
+                  stage: c.stage,
+                }))}
+              />
               <Link to="/teams">
                 <Button variant="outline">
                   <Users className="w-4 h-4 mr-2" />
@@ -374,6 +383,16 @@ const TalentPipeline = () => {
           </motion.div>
         )}
 
+        {/* Email History Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-card border border-border rounded-2xl p-4 mb-8"
+        >
+          <EmailLogsList limit={5} />
+        </motion.div>
+
         {/* Pipeline Stages */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
           {STAGES.map((stage, stageIndex) => {
@@ -424,6 +443,7 @@ const TalentPipeline = () => {
                           {/* Email Action */}
                           <div onClick={(e) => e.stopPropagation()}>
                             <PipelineEmailDialog
+                              candidateId={candidate.id}
                               candidateName={candidate.candidate_name}
                               candidateEmail={candidate.candidate_email}
                               currentStage={stage.key}
