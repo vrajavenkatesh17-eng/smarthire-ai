@@ -18,6 +18,7 @@ const escapeHtml = (text: string): string => {
 };
 
 interface EmailRequest {
+  candidateId?: string;
   candidateName: string;
   candidateEmail: string;
   emailType: "rejection" | "offer" | "interview_confirmation" | "follow_up";
@@ -298,14 +299,41 @@ serve(async (req) => {
       }),
     });
 
+    // Create admin client for logging
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey);
+
     if (!emailResponse.ok) {
       const errorData = await emailResponse.text();
       console.error("Resend API error:", errorData);
+      
+      // Log failed email
+      await adminClient.from("email_logs").insert({
+        user_id: user.id,
+        candidate_id: emailData.candidateId || null,
+        candidate_name: emailData.candidateName,
+        candidate_email: emailData.candidateEmail,
+        email_type: emailData.emailType,
+        status: "failed",
+        error_message: `Failed to send: ${emailResponse.status}`,
+      });
+      
       throw new Error(`Failed to send email: ${emailResponse.status}`);
     }
 
     const responseData = await emailResponse.json();
     console.log("Hiring stage email sent:", responseData);
+
+    // Log successful email
+    await adminClient.from("email_logs").insert({
+      user_id: user.id,
+      candidate_id: emailData.candidateId || null,
+      candidate_name: emailData.candidateName,
+      candidate_email: emailData.candidateEmail,
+      email_type: emailData.emailType,
+      status: "sent",
+      resend_id: responseData.id,
+    });
 
     return new Response(JSON.stringify({ success: true, id: responseData.id }), {
       status: 200,
