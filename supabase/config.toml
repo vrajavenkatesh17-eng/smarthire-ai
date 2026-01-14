@@ -7,7 +7,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.send-analysis-notification]
-verify_jwt = true
+verify_jwt = false
 
 [functions.match-job-description]
 verify_jwt = false
