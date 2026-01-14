@@ -1,15 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
-import { ArrowLeft, Sparkles, FileText, Zap, Shield, BarChart3, Files, Briefcase, ChevronDown, ChevronUp } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { ArrowLeft, Sparkles, FileText, Zap, Shield, BarChart3, Files, Briefcase, ChevronDown, ChevronUp, AlertTriangle, Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import ResumeUpload from "@/components/ResumeUpload";
 import BulkResumeUpload from "@/components/BulkResumeUpload";
 import { JobDescriptionTemplates } from "@/components/JobDescriptionTemplates";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
+import { PasskeyDialog } from "@/components/PasskeyDialog";
 
 const features = [
   {
@@ -31,8 +34,20 @@ const features = [
 
 const ResumeAnalyzer = () => {
   const { user } = useAuth();
+  const { isCompany } = useUserRole();
+  const location = useLocation();
   const [jobDescription, setJobDescription] = useState("");
   const [isJobDescOpen, setIsJobDescOpen] = useState(false);
+  const [showPasskeyDialog, setShowPasskeyDialog] = useState(false);
+  const [showAccessDenied, setShowAccessDenied] = useState(false);
+
+  useEffect(() => {
+    if (location.state?.accessDenied) {
+      setShowAccessDenied(true);
+      // Clear the state after showing
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
   
   return (
     <div className="min-h-screen bg-background">
@@ -77,6 +92,38 @@ const ResumeAnalyzer = () => {
           </div>
         </div>
       </motion.header>
+
+      {/* Access Denied Alert */}
+      {showAccessDenied && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="container mx-auto px-6 pt-6"
+        >
+          <Alert variant="destructive" className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <AlertTitle className="text-amber-800 dark:text-amber-200">Company Access Required</AlertTitle>
+            <AlertDescription className="text-amber-700 dark:text-amber-300">
+              That feature requires Company access. Enter your passkey to unlock all features including 
+              Dashboard, Talent Pipeline, Job Matching, Interviews, and Team Collaboration.
+              <div className="mt-3">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="gap-2 border-amber-600 text-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900"
+                  onClick={() => {
+                    setShowPasskeyDialog(true);
+                    setShowAccessDenied(false);
+                  }}
+                >
+                  <Key className="w-4 h-4" />
+                  Enter Passkey
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        </motion.div>
+      )}
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-12">
@@ -229,6 +276,8 @@ const ResumeAnalyzer = () => {
           </motion.div>
         </div>
       </main>
+
+      <PasskeyDialog open={showPasskeyDialog} onOpenChange={setShowPasskeyDialog} />
     </div>
   );
 };

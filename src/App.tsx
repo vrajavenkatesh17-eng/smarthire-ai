@@ -4,7 +4,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { UserRoleProvider } from "@/hooks/useUserRole";
+import { ThemeProvider } from "@/hooks/useTheme";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { RoleProtectedRoute } from "@/components/RoleProtectedRoute";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import ResumeAnalyzer from "./pages/ResumeAnalyzer";
@@ -23,30 +26,36 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/resume-analyzer" element={<ProtectedRoute><ResumeAnalyzer /></ProtectedRoute>} />
-            <Route path="/resume-history" element={<ProtectedRoute><ResumeHistory /></ProtectedRoute>} />
-            <Route path="/job-matching" element={<ProtectedRoute><JobMatching /></ProtectedRoute>} />
-            <Route path="/compare-candidates" element={<ProtectedRoute><CandidateComparison /></ProtectedRoute>} />
-            <Route path="/talent-pipeline" element={<ProtectedRoute><TalentPipeline /></ProtectedRoute>} />
-            <Route path="/interviews" element={<ProtectedRoute><Interviews /></ProtectedRoute>} />
-            <Route path="/teams" element={<ProtectedRoute><Teams /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route path="/creators" element={<Creators />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <UserRoleProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                {/* Common user routes - accessible to all authenticated users */}
+                <Route path="/resume-analyzer" element={<ProtectedRoute><ResumeAnalyzer /></ProtectedRoute>} />
+                <Route path="/resume-history" element={<ProtectedRoute><ResumeHistory /></ProtectedRoute>} />
+                {/* Company-only routes */}
+                <Route path="/dashboard" element={<ProtectedRoute><RoleProtectedRoute><Dashboard /></RoleProtectedRoute></ProtectedRoute>} />
+                <Route path="/job-matching" element={<ProtectedRoute><RoleProtectedRoute><JobMatching /></RoleProtectedRoute></ProtectedRoute>} />
+                <Route path="/compare-candidates" element={<ProtectedRoute><RoleProtectedRoute><CandidateComparison /></RoleProtectedRoute></ProtectedRoute>} />
+                <Route path="/talent-pipeline" element={<ProtectedRoute><RoleProtectedRoute><TalentPipeline /></RoleProtectedRoute></ProtectedRoute>} />
+                <Route path="/interviews" element={<ProtectedRoute><RoleProtectedRoute><Interviews /></RoleProtectedRoute></ProtectedRoute>} />
+                <Route path="/teams" element={<ProtectedRoute><RoleProtectedRoute><Teams /></RoleProtectedRoute></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                <Route path="/creators" element={<Creators />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </UserRoleProvider>
+      </AuthProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

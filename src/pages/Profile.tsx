@@ -1,14 +1,17 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Camera, Loader2, Save, Lock, Eye, EyeOff, Trash2 } from "lucide-react";
+import { ArrowLeft, User, Camera, Loader2, Save, Lock, Eye, EyeOff, Trash2, Building2, Key, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
+import { PasskeyDialog } from "@/components/PasskeyDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +26,8 @@ import {
 
 const Profile = () => {
   const { user, isLoading: authLoading } = useAuth();
+  const { role, isCompany, refetchRole } = useUserRole();
+  const [showPasskeyDialog, setShowPasskeyDialog] = useState(false);
   const [fullName, setFullName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -509,6 +514,70 @@ const Profile = () => {
             </form>
           </div>
 
+          {/* Role Management Card */}
+          <div className="bg-card border border-border rounded-2xl p-8">
+            <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Shield className="w-5 h-5" />
+              Account Type
+            </h2>
+            
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                {isCompany ? (
+                  <Badge variant="default" className="gap-1 px-3 py-1">
+                    <Building2 className="w-4 h-4" />
+                    Company Account
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="gap-1 px-3 py-1">
+                    <User className="w-4 h-4" />
+                    Common User
+                  </Badge>
+                )}
+              </div>
+            </div>
+            
+            {isCompany ? (
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+                <p className="text-sm text-muted-foreground">
+                  You have full access to all features including:
+                </p>
+                <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+                  <li className="flex items-center gap-2">
+                    <span className="text-primary">✓</span> Dashboard & Analytics
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-primary">✓</span> Talent Pipeline Management
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-primary">✓</span> Job Matching & Comparison
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-primary">✓</span> Interview Scheduling
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-primary">✓</span> Team Collaboration
+                  </li>
+                </ul>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground mb-4">
+                  As a common user, you can analyze resumes and view your history. 
+                  Upgrade to Company to unlock all features.
+                </p>
+                <Button 
+                  variant="outline" 
+                  className="w-full gap-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                  onClick={() => setShowPasskeyDialog(true)}
+                >
+                  <Key className="w-4 h-4" />
+                  Enter Company Passkey
+                </Button>
+              </>
+            )}
+          </div>
+
           {/* Delete Account Card */}
           <div className="bg-card border border-destructive/30 rounded-2xl p-8">
             <h2 className="text-lg font-semibold text-destructive mb-4 flex items-center gap-2">
@@ -562,6 +631,8 @@ const Profile = () => {
           </div>
         </motion.div>
       </main>
+
+      <PasskeyDialog open={showPasskeyDialog} onOpenChange={setShowPasskeyDialog} />
     </div>
   );
 };
