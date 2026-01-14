@@ -1,4 +1,5 @@
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,10 +26,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
   }
 
   try {
-    // JWT is verified by Supabase (verify_jwt = true in config.toml)
-    // Extract user from the verified JWT
+    // Validate JWT in code (verify_jwt = false in config.toml)
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!authHeader?.startsWith("Bearer ")) {
       console.error("No authorization header provided");
       return new Response(JSON.stringify({ code: 401, message: "Unauthorized" }), {
         status: 401,
@@ -36,26 +36,24 @@ Deno.serve(async (req: Request): Promise<Response> => {
       });
     }
 
-    // Parse the JWT to get user info (already verified by Supabase relay)
-    const token = authHeader.replace("Bearer ", "");
-    let userId: string;
-    try {
-      // Handle base64url encoding (JWT uses - and _ instead of + and /)
-      const base64Payload = token.split('.')[1];
-      const base64 = base64Payload.replace(/-/g, '+').replace(/_/g, '/');
-      const payload = JSON.parse(atob(base64));
-      userId = payload.sub;
-      if (!userId) {
-        throw new Error("No user ID in token");
-      }
-      console.log("Authenticated user:", userId);
-    } catch (e) {
-      console.error("Failed to parse JWT");
-      return new Response(JSON.stringify({ code: 401, message: "Invalid token" }), {
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error } = await supabase.auth.getUser();
+    
+    if (error || !user) {
+      console.error("JWT validation failed:", error);
+      return new Response(JSON.stringify({ code: 401, message: "Invalid JWT" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const userId = user.id;
+    console.log("Authenticated user:", userId);
 
     // Parse and validate input
     const rawBody = await req.json();
