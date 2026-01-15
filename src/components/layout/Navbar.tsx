@@ -1,14 +1,12 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Sparkles, LayoutDashboard, FileText, LogIn, LogOut, History, User, Calendar, Building2, Key } from "lucide-react";
+import { Menu, X, Sparkles, LayoutDashboard, FileText, LogIn, LogOut, History, User, Calendar, Building2, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { PasskeyDialog } from "@/components/PasskeyDialog";
 import { Badge } from "@/components/ui/badge";
-
 const navLinks = [
   { label: "Features", href: "#features" },
   { label: "How It Works", href: "#how-it-works" },
@@ -18,8 +16,7 @@ const navLinks = [
 ];
 
 const Navbar = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [showPasskeyDialog, setShowPasskeyDialog] = useState(false);
+const [isOpen, setIsOpen] = useState(false);
   const { user, signOut } = useAuth();
   const { isCompany, role } = useUserRole();
   const location = useLocation();
@@ -158,6 +155,18 @@ const Navbar = () => {
                       </Button>
                     </Link>
                   </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.37 }}
+                  >
+                    <Link to="/company-admin">
+                      <Button variant="ghost" size="sm" className="gap-2">
+                        <Shield className="w-4 h-4" />
+                        Admin
+                      </Button>
+                    </Link>
+                  </motion.div>
                 </>
               )}
               
@@ -176,24 +185,6 @@ const Navbar = () => {
                 </motion.div>
               )}
               
-              {/* Upgrade button for common users */}
-              {user && !isCompany && (
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.39 }}
-                >
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="gap-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                    onClick={() => setShowPasskeyDialog(true)}
-                  >
-                    <Key className="w-4 h-4" />
-                    Upgrade
-                  </Button>
-                </motion.div>
-              )}
               
               {/* Role badge */}
               {user && role && (
@@ -368,20 +359,14 @@ const Navbar = () => {
                       </Button>
                     </Link>
                   )}
-                  {/* Upgrade button for mobile */}
-                  {user && !isCompany && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full justify-start gap-2 border-primary text-primary"
-                      onClick={() => {
-                        setShowPasskeyDialog(true);
-                        setIsOpen(false);
-                      }}
-                    >
-                      <Key className="w-4 h-4" />
-                      Upgrade to Company
-                    </Button>
+                  {/* Company admin link for mobile */}
+                  {user && isCompany && (
+                    <Link to="/company-admin" onClick={() => setIsOpen(false)}>
+                      <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
+                        <Shield className="w-4 h-4" />
+                        Admin
+                      </Button>
+                    </Link>
                   )}
                   {user ? (
                     <Button variant="outline" size="sm" className="gap-2" onClick={() => { signOut(); setIsOpen(false); }}>
@@ -402,8 +387,6 @@ const Navbar = () => {
           )}
         </AnimatePresence>
       </motion.nav>
-      
-      <PasskeyDialog open={showPasskeyDialog} onOpenChange={setShowPasskeyDialog} />
     </>
   );
 };

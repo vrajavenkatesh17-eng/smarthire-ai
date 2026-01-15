@@ -20,6 +20,7 @@ import Teams from "./pages/Teams";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import Creators from "./pages/Creators";
+import CompanyAdmin from "./pages/CompanyAdmin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,7 @@ const App = () => (
                 <Route path="/talent-pipeline" element={<ProtectedRoute><RoleProtectedRoute><TalentPipeline /></RoleProtectedRoute></ProtectedRoute>} />
                 <Route path="/interviews" element={<ProtectedRoute><RoleProtectedRoute><Interviews /></RoleProtectedRoute></ProtectedRoute>} />
                 <Route path="/teams" element={<ProtectedRoute><RoleProtectedRoute><Teams /></RoleProtectedRoute></ProtectedRoute>} />
+                <Route path="/company-admin" element={<ProtectedRoute><RoleProtectedRoute><CompanyAdmin /></RoleProtectedRoute></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/creators" element={<Creators />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
