@@ -1,13 +1,19 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Mail, Lock, User, Loader2 } from "lucide-react";
+import { ArrowLeft, Mail, Lock, User, Loader2, Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { z } from "zod";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 const emailSchema = z.string().trim().email({ message: "Invalid email address" });
 const passwordSchema = z.string().min(6, { message: "Password must be at least 6 characters" });
@@ -18,6 +24,8 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [passkey, setPasskey] = useState("");
+  const [showPasskey, setShowPasskey] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>("signin");
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -27,7 +35,6 @@ const Auth = () => {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    // Check if this is a password reset callback
     const type = searchParams.get("type");
     if (type === "recovery") {
       setAuthMode("reset-password");
@@ -39,12 +46,10 @@ const Auth = () => {
       if (event === "PASSWORD_RECOVERY") {
         setAuthMode("reset-password");
       } else if (event === "SIGNED_IN" && session?.user) {
-        // Check if this is from email confirmation
         const type = searchParams.get("type");
         if (type === "recovery") {
           setAuthMode("reset-password");
         } else {
-          // Redirect to profile after email confirmation
           navigate("/profile");
         }
       }
@@ -97,6 +102,55 @@ const Auth = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const validateAndUpgradeRole = async (userId: string, userEmail: string) => {
+    if (!passkey.trim()) return;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const response = await supabase.functions.invoke("validate-passkey", {
+        body: { passkey: passkey.trim() },
+      });
+
+      if (response.data?.valid) {
+        // Update role to company
+        const { error: roleError } = await supabase
+          .from("user_roles")
+          .upsert({ user_id: userId, role: "company" }, { onConflict: "user_id" });
+
+        if (!roleError) {
+          // Record company user if adminId is provided
+          if (response.data.adminId) {
+            await supabase
+              .from("company_users")
+              .insert({
+                user_id: userId,
+                admin_id: response.data.adminId,
+                email: userEmail,
+              });
+          }
+
+          // Send upgrade notification email
+          try {
+            await supabase.functions.invoke("send-upgrade-notification", {
+              body: { userEmail, userName: userEmail.split("@")[0] },
+            });
+          } catch (emailError) {
+            console.error("Failed to send upgrade notification:", emailError);
+          }
+
+          toast({
+            title: "Company Access Granted! 🎉",
+            description: "You now have access to all company features.",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error validating passkey:", error);
+    }
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -105,7 +159,7 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       });
@@ -130,6 +184,9 @@ const Auth = () => {
             variant: "destructive",
           });
         }
+      } else if (data.user) {
+        // Validate passkey after successful sign in
+        await validateAndUpgradeRole(data.user.id, data.user.email || "");
       }
     } catch (err) {
       toast({
@@ -150,7 +207,7 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
@@ -164,10 +221,17 @@ const Auth = () => {
           description: error.message,
           variant: "destructive",
         });
-      } else {
+      } else if (data.user) {
+        // Validate passkey after successful sign up (if auto-confirm is on)
+        if (data.session) {
+          await validateAndUpgradeRole(data.user.id, data.user.email || "");
+        }
+        
         toast({
-          title: "Check Your Email",
-          description: "We've sent you a confirmation link. Click it to verify your account.",
+          title: passkey.trim() ? "Account Created with Company Access! 🎉" : "Check Your Email",
+          description: passkey.trim() 
+            ? "Your company account has been created successfully."
+            : "We've sent you a confirmation link. Click it to verify your account.",
         });
       }
     } catch (err) {
@@ -308,21 +372,24 @@ const Auth = () => {
         className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border"
       >
         <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center gap-4">
-            <Link to="/">
-              <Button variant="ghost" size="icon" className="hover-lift">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-            </Link>
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-hero rounded-xl flex items-center justify-center">
-                <User className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-foreground">{headerText.title}</h1>
-                <p className="text-xs text-muted-foreground">{headerText.subtitle}</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Link to="/">
+                <Button variant="ghost" size="icon" className="hover-lift">
+                  <ArrowLeft className="w-5 h-5" />
+                </Button>
+              </Link>
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 bg-gradient-hero rounded-xl flex items-center justify-center">
+                  <User className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-foreground">{headerText.title}</h1>
+                  <p className="text-xs text-muted-foreground">{headerText.subtitle}</p>
+                </div>
               </div>
             </div>
+            <ThemeToggle />
           </div>
         </div>
       </motion.header>
@@ -535,6 +602,39 @@ const Auth = () => {
                       <p className="text-sm text-destructive">{errors.password}</p>
                     )}
                   </div>
+
+                  {/* Passkey Section */}
+                  <Collapsible open={showPasskey} onOpenChange={setShowPasskey}>
+                    <CollapsibleTrigger asChild>
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        className="w-full justify-start text-muted-foreground hover:text-foreground p-0 h-auto font-normal"
+                      >
+                        <Key className="w-4 h-4 mr-2" />
+                        {showPasskey ? "Hide company passkey" : "Have a company passkey?"}
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-3">
+                      <div className="space-y-2 p-4 bg-muted/50 rounded-lg border border-border">
+                        <Label htmlFor="passkey" className="text-foreground">Company Passkey</Label>
+                        <div className="relative">
+                          <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            id="passkey"
+                            type="password"
+                            placeholder="Enter company passkey..."
+                            value={passkey}
+                            onChange={(e) => setPasskey(e.target.value)}
+                            className="pl-10"
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Enter a valid passkey to get full company access. Leave empty for basic access.
+                        </p>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
 
                   {authMode === "signin" && (
                     <div className="text-right">

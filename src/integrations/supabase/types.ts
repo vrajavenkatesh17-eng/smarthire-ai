@@ -203,6 +203,59 @@ export type Database = {
           },
         ]
       }
+      company_admins: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      company_users: {
+        Row: {
+          admin_id: string
+          created_at: string
+          email: string | null
+          id: string
+          upgraded_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          upgraded_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          upgraded_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_users_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "company_admins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_logs: {
         Row: {
           candidate_email: string
@@ -399,6 +452,41 @@ export type Database = {
         }
         Relationships: []
       }
+      passkey_settings: {
+        Row: {
+          admin_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          passkey: string
+          updated_at: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          passkey: string
+          updated_at?: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          passkey?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "passkey_settings_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "company_admins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pipeline_activities: {
         Row: {
           activity_type: string
@@ -572,7 +660,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "company" | "common"
+      app_role: "company" | "common" | "admin"
       candidate_stage:
         | "new"
         | "screening"
@@ -708,7 +796,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["company", "common"],
+      app_role: ["company", "common", "admin"],
       candidate_stage: [
         "new",
         "screening",

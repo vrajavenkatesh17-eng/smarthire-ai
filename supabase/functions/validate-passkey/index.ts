@@ -36,19 +36,36 @@ Deno.serve(async (req) => {
     }
 
     const { passkey } = await req.json();
+    
+    // First check against the environment variable (fallback)
     const storedPasskey = Deno.env.get("COMPANY_PASSKEY");
-
-    if (!storedPasskey) {
-      console.error("COMPANY_PASSKEY not configured");
-      return new Response(JSON.stringify({ error: "Passkey not configured" }), {
-        status: 500,
+    
+    if (storedPasskey && passkey === storedPasskey) {
+      return new Response(JSON.stringify({ valid: true, adminId: null }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const valid = passkey === storedPasskey;
+    // Check against database passkeys
+    const { data: passkeyData, error: passkeyError } = await supabase
+      .from("passkey_settings")
+      .select("id, admin_id, is_active")
+      .eq("passkey", passkey)
+      .eq("is_active", true)
+      .single();
 
-    return new Response(JSON.stringify({ valid }), {
+    if (passkeyError || !passkeyData) {
+      return new Response(JSON.stringify({ valid: false }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response(JSON.stringify({ 
+      valid: true, 
+      adminId: passkeyData.admin_id 
+    }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
