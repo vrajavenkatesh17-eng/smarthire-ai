@@ -12,8 +12,11 @@ import {
   Shield,
   Loader2,
   Mail,
-  Calendar
+  Calendar,
+  UserMinus,
+  AlertTriangle
 } from "lucide-react";
+import OnboardingWizard from "@/components/OnboardingWizard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,6 +45,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface CompanyUser {
   id: string;
@@ -72,6 +86,9 @@ const CompanyAdmin = () => {
   const [isAddingPasskey, setIsAddingPasskey] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [isNewAdmin, setIsNewAdmin] = useState(false);
+  const [revokingUserId, setRevokingUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -109,6 +126,8 @@ const CompanyAdmin = () => {
             if (!insertError && newAdmin) {
               setIsAdmin(true);
               setAdminId(newAdmin.id);
+              setIsNewAdmin(true);
+              setShowOnboarding(true);
               toast({
                 title: "Admin Access Granted",
                 description: "You are now the company admin!",
@@ -119,10 +138,14 @@ const CompanyAdmin = () => {
           }
         }
       } else {
-        setIsAdmin(true);
+      setIsAdmin(true);
         setAdminId(adminData.id);
         await fetchCompanyUsers(adminData.id);
-        await fetchPasskeys(adminData.id);
+        const fetchedPasskeys = await fetchPasskeys(adminData.id);
+        // Show onboarding if no passkeys exist
+        if (fetchedPasskeys.length === 0) {
+          setShowOnboarding(true);
+        }
       }
     } catch (error) {
       console.error("Error checking admin status:", error);
@@ -152,6 +175,54 @@ const CompanyAdmin = () => {
 
     if (!error && data) {
       setPasskeys(data);
+      return data;
+    }
+    return [];
+  };
+
+  const revokeUserAccess = async (userId: string, userEmail: string | null) => {
+    setRevokingUserId(userId);
+    try {
+      // Delete from company_users
+      const { error: deleteError } = await supabase
+        .from("company_users")
+        .delete()
+        .eq("user_id", userId)
+        .eq("admin_id", adminId);
+
+      if (deleteError) throw deleteError;
+
+      // Update user role back to common
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .update({ role: "common", updated_at: new Date().toISOString() })
+        .eq("user_id", userId);
+
+      if (roleError) throw roleError;
+
+      // Update local state
+      setCompanyUsers(prev => prev.filter(u => u.user_id !== userId));
+      
+      toast({
+        title: "Access Revoked",
+        description: `${userEmail || "User"} has been removed from company access.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setRevokingUserId(null);
+    }
+  };
+
+  const handleOnboardingComplete = async () => {
+    setShowOnboarding(false);
+    if (adminId) {
+      await fetchPasskeys(adminId);
+      await fetchCompanyUsers(adminId);
     }
   };
 
@@ -298,6 +369,37 @@ const CompanyAdmin = () => {
               </Link>
             </CardContent>
           </Card>
+        </main>
+      </div>
+    );
+  }
+
+  // Show onboarding wizard for new admins
+  if (showOnboarding && adminId) {
+    return (
+      <div className="min-h-screen bg-background">
+        <motion.header
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border"
+        >
+          <div className="container mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 bg-gradient-hero rounded-xl flex items-center justify-center">
+                  <Shield className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-foreground">Company Setup</h1>
+                  <p className="text-xs text-muted-foreground">Get started with your company</p>
+                </div>
+              </div>
+              <ThemeToggle />
+            </div>
+          </div>
+        </motion.header>
+        <main className="container mx-auto px-6 py-12">
+          <OnboardingWizard adminId={adminId} onComplete={handleOnboardingComplete} />
         </main>
       </div>
     );
@@ -496,6 +598,7 @@ const CompanyAdmin = () => {
                     <TableRow>
                       <TableHead>Email</TableHead>
                       <TableHead>Upgraded At</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -504,7 +607,7 @@ const CompanyAdmin = () => {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Mail className="w-4 h-4 text-muted-foreground" />
-                            {cu.email || "Unknown"}
+                            <span className="text-foreground">{cu.email || "Unknown"}</span>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -512,6 +615,49 @@ const CompanyAdmin = () => {
                             <Calendar className="w-4 h-4" />
                             {new Date(cu.upgraded_at).toLocaleString()}
                           </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                disabled={revokingUserId === cu.user_id}
+                              >
+                                {revokingUserId === cu.user_id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <>
+                                    <UserMinus className="w-4 h-4 mr-2" />
+                                    Revoke
+                                  </>
+                                )}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle className="flex items-center gap-2">
+                                  <AlertTriangle className="w-5 h-5 text-destructive" />
+                                  Revoke Company Access
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to revoke company access for{" "}
+                                  <strong>{cu.email || "this user"}</strong>? They will be 
+                                  downgraded to a common user and lose access to company features.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => revokeUserAccess(cu.user_id, cu.email)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Revoke Access
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </TableCell>
                       </TableRow>
                     ))}

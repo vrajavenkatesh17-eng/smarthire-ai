@@ -13,6 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { exportToCSV, exportToPDF, exportSingleResumeToPDF } from "@/lib/exportUtils";
 import AnalysisResultDisplay from "@/components/AnalysisResultDisplay";
 
@@ -38,6 +39,7 @@ const ResumeHistory = () => {
   const [scoreFilter, setScoreFilter] = useState<ScoreFilter>("all");
   const [selectedForExport, setSelectedForExport] = useState<Set<string>>(new Set());
   const { user, isLoading: authLoading } = useAuth();
+  const { isCompany, isLoading: roleLoading } = useUserRole();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -48,17 +50,25 @@ const ResumeHistory = () => {
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
-    if (user) {
+    if (user && !roleLoading) {
       fetchResumes();
     }
-  }, [user]);
+  }, [user, isCompany, roleLoading]);
 
   const fetchResumes = async () => {
     try {
-      const { data, error } = await supabase
+      // Company users can see all resumes, common users only see their own
+      let query = supabase
         .from("analyzed_resumes")
         .select("*")
         .order("created_at", { ascending: false });
+
+      // For common users, filter by their user_id
+      if (!isCompany && user) {
+        query = query.eq("user_id", user.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setResumes(data || []);
@@ -217,7 +227,7 @@ const ResumeHistory = () => {
     });
   }, [resumes, searchQuery, sortOption, scoreFilter]);
 
-  if (authLoading || isLoading) {
+  if (authLoading || isLoading || roleLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />

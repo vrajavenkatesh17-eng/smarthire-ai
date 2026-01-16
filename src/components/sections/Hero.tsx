@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Sparkles, Brain, Zap, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useNavigate } from "react-router-dom";
 
 const clientLogos = [
   { name: "Google", letter: "G" },
@@ -33,6 +35,17 @@ const itemVariants = {
 };
 
 const Hero = () => {
+  const [email, setEmail] = useState("");
+  const navigate = useNavigate();
+
+  const handleGetStarted = () => {
+    if (email.trim()) {
+      navigate(`/auth?mode=signup&email=${encodeURIComponent(email.trim())}`);
+    } else {
+      navigate("/auth?mode=signup");
+    }
+  };
+
   return (
     <section className="relative min-h-screen flex items-center justify-center pt-16 overflow-hidden">
       {/* Animated Background Elements */}
@@ -124,9 +137,17 @@ const Hero = () => {
               <Input
                 type="email"
                 placeholder="Enter your work email..."
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleGetStarted()}
                 className="w-full sm:w-72 h-12 rounded-l-xl rounded-r-none border-r-0 transition-shadow focus:shadow-lg"
               />
-              <Button variant="hero" size="lg" className="rounded-l-none rounded-r-xl group">
+              <Button 
+                variant="hero" 
+                size="lg" 
+                className="rounded-l-none rounded-r-xl group"
+                onClick={handleGetStarted}
+              >
                 Get Started
                 <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
               </Button>
