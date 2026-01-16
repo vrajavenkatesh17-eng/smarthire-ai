@@ -136,7 +136,7 @@ const Demo = () => {
         }} transition={{
           duration: 0.5,
           delay: 0.1
-        }} className="text-heading md:text-display-sm text-foreground mt-6 mb-6">
+        }} className="text-heading md:text-display-sm mt-6 mb-6 text-[#0f0000]">
             Try our <span className="text-gradient">AI HR Assistant</span>
           </motion.h2>
           <motion.p initial={{
