@@ -21,18 +21,20 @@ const passwordSchema = z.string().min(6, { message: "Password must be at least 6
 type AuthMode = "signin" | "signup" | "forgot-password" | "reset-password";
 
 const Auth = () => {
-  const [email, setEmail] = useState("");
+  const [searchParams] = useSearchParams();
+  const initialEmail = searchParams.get("email") || "";
+  
+  const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passkey, setPasskey] = useState("");
   const [showPasskey, setShowPasskey] = useState(false);
-  const [authMode, setAuthMode] = useState<AuthMode>("signin");
+  const [authMode, setAuthMode] = useState<AuthMode>(searchParams.get("mode") === "signup" ? "signup" : "signin");
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; confirmPassword?: string }>({});
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     const type = searchParams.get("type");
@@ -50,7 +52,7 @@ const Auth = () => {
         if (type === "recovery") {
           setAuthMode("reset-password");
         } else {
-          navigate("/profile");
+          navigate("/");
         }
       }
     });
@@ -61,7 +63,7 @@ const Auth = () => {
         if (type === "recovery") {
           setAuthMode("reset-password");
         } else {
-          navigate("/profile");
+          navigate("/");
         }
       }
     });

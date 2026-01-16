@@ -44,14 +44,14 @@ const Demo = () => {
   const {
     toast
   } = useToast();
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: "smooth"
-    });
+  // Only scroll to bottom when user sends a message, not on every message update
+  const scrollToBottom = (force = false) => {
+    if (force) {
+      messagesEndRef.current?.scrollIntoView({
+        behavior: "smooth"
+      });
+    }
   };
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
     const userMessage = input.trim();
@@ -62,6 +62,8 @@ const Demo = () => {
     };
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
+    // Scroll to bottom when user sends a message
+    setTimeout(() => scrollToBottom(true), 100);
     let assistantContent = "";
     const updateAssistant = (chunk: string) => {
       assistantContent += chunk;
