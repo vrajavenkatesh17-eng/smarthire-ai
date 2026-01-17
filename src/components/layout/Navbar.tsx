@@ -7,6 +7,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Badge } from "@/components/ui/badge";
+import NotificationBadge from "@/components/NotificationBadge";
+
 const navLinks = [
   { label: "Features", href: "#features" },
   { label: "How It Works", href: "#how-it-works" },
@@ -99,6 +101,7 @@ const [isOpen, setIsOpen] = useState(false);
             {/* CTA Buttons */}
             <div className="hidden md:flex items-center gap-2">
               <ThemeToggle />
+              <NotificationBadge />
               
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
