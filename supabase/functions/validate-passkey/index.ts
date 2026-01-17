@@ -12,42 +12,32 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Validate JWT
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Invalid token" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const { passkey } = await req.json();
     
+    if (!passkey) {
+      return new Response(JSON.stringify({ valid: false, error: "Passkey required" }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // First check against the environment variable (fallback)
     const storedPasskey = Deno.env.get("COMPANY_PASSKEY");
     
     if (storedPasskey && passkey === storedPasskey) {
+      console.log("Passkey validated against environment variable");
       return new Response(JSON.stringify({ valid: true, adminId: null }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Check against database passkeys
+    // Check against database passkeys using service role
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
     const { data: passkeyData, error: passkeyError } = await supabase
       .from("passkey_settings")
       .select("id, admin_id, is_active")
@@ -56,12 +46,14 @@ Deno.serve(async (req) => {
       .single();
 
     if (passkeyError || !passkeyData) {
+      console.log("Passkey not found in database:", passkeyError?.message);
       return new Response(JSON.stringify({ valid: false }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    console.log("Passkey validated against database");
     return new Response(JSON.stringify({ 
       valid: true, 
       adminId: passkeyData.admin_id 
