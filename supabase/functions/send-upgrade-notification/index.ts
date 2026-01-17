@@ -1,4 +1,3 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
@@ -20,30 +19,16 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Validate JWT
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Invalid token" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const { userEmail, userName }: UpgradeNotificationRequest = await req.json();
+
+    if (!userEmail) {
+      return new Response(JSON.stringify({ error: "Email is required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    console.log("Sending upgrade notification to:", userEmail);
 
     const emailResponse = await resend.emails.send({
       from: "HireSmart <onboarding@resend.dev>",
@@ -89,7 +74,7 @@ Deno.serve(async (req) => {
             </div>
 
             <p style="text-align: center;">
-              <a href="${Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '.lovable.app')}/dashboard" class="cta-button">
+              <a href="https://id-preview--b026ca43-9125-495f-9e3d-b6ef02923345.lovable.app/dashboard" class="cta-button">
                 Explore Your Dashboard
               </a>
             </p>
