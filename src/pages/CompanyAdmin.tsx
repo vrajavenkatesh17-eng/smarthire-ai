@@ -14,15 +14,20 @@ import {
   Mail,
   Calendar,
   UserMinus,
-  AlertTriangle
+  AlertTriangle,
+  BarChart3,
+  Bell
 } from "lucide-react";
 import OnboardingWizard from "@/components/OnboardingWizard";
+import AdminAnalyticsDashboard from "@/components/AdminAnalyticsDashboard";
+import AdminNotificationsPanel from "@/components/AdminNotificationsPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -89,6 +94,7 @@ const CompanyAdmin = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isNewAdmin, setIsNewAdmin] = useState(false);
   const [revokingUserId, setRevokingUserId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("analytics");
 
   useEffect(() => {
     if (!user) {
@@ -357,7 +363,7 @@ const CompanyAdmin = () => {
         </motion.header>
 
         <main className="flex-1 flex items-center justify-center p-6">
-          <Card className="max-w-md w-full">
+          <Card className="max-w-md w-full glass-card">
             <CardContent className="pt-6 text-center">
               <Shield className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
               <h2 className="text-xl font-semibold text-foreground mb-2">Admin Access Only</h2>
@@ -406,11 +412,11 @@ const CompanyAdmin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background dark:bg-gradient-to-b dark:from-background dark:via-background dark:to-muted/20">
       <motion.header
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border"
+        className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border dark:border-border/50"
       >
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
@@ -421,12 +427,12 @@ const CompanyAdmin = () => {
                 </Button>
               </Link>
               <div className="flex items-center gap-2">
-                <div className="w-10 h-10 bg-gradient-hero rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-gradient-hero rounded-xl flex items-center justify-center shadow-glow">
                   <Shield className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-foreground">Company Admin</h1>
-                  <p className="text-xs text-muted-foreground">Manage passkeys and users</p>
+                  <p className="text-xs text-muted-foreground">Manage your company</p>
                 </div>
               </div>
             </div>
@@ -435,238 +441,284 @@ const CompanyAdmin = () => {
         </div>
       </motion.header>
 
-      <main className="container mx-auto px-6 py-8 space-y-8">
-        {/* Passkey Management */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
+      <main className="container mx-auto px-6 py-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full max-w-lg grid-cols-4 bg-muted/50 dark:bg-muted/30 p-1">
+            <TabsTrigger value="analytics" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <BarChart3 className="w-4 h-4" />
+              <span className="hidden sm:inline">Analytics</span>
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <Bell className="w-4 h-4" />
+              <span className="hidden sm:inline">Inbox</span>
+            </TabsTrigger>
+            <TabsTrigger value="passkeys" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <Key className="w-4 h-4" />
+              <span className="hidden sm:inline">Passkeys</span>
+            </TabsTrigger>
+            <TabsTrigger value="users" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <Users className="w-4 h-4" />
+              <span className="hidden sm:inline">Users</span>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Analytics Tab */}
+          <TabsContent value="analytics" className="space-y-6">
+            <AdminAnalyticsDashboard />
+          </TabsContent>
+
+          {/* Notifications Tab */}
+          <TabsContent value="notifications" className="space-y-6">
+            <AdminNotificationsPanel />
+          </TabsContent>
+
+          {/* Passkeys Tab */}
+          <TabsContent value="passkeys" className="space-y-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <Card className="glass-card dark:bg-card/50 dark:border-border/50">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Key className="w-5 h-5 text-primary" />
+                        Passkey Management
+                      </CardTitle>
+                      <CardDescription>
+                        Create and manage access passkeys for your company
+                      </CardDescription>
+                    </div>
+                    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button className="bg-gradient-hero hover:opacity-90 shadow-glow">
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Passkey
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="dark:bg-card dark:border-border/50">
+                        <DialogHeader>
+                          <DialogTitle>Create New Passkey</DialogTitle>
+                          <DialogDescription>
+                            Create a new passkey that users can use to upgrade to company access.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="passkey">Passkey</Label>
+                            <Input
+                              id="passkey"
+                              placeholder="Enter a unique passkey..."
+                              value={newPasskey}
+                              onChange={(e) => setNewPasskey(e.target.value)}
+                              className="dark:bg-muted/50 dark:border-border/50"
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                            Cancel
+                          </Button>
+                          <Button onClick={handleAddPasskey} disabled={isAddingPasskey || !newPasskey.trim()} className="bg-gradient-hero">
+                            {isAddingPasskey ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Creating...
+                              </>
+                            ) : (
+                              "Create Passkey"
+                            )}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {passkeys.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted/50 flex items-center justify-center">
+                        <Key className="w-8 h-8 opacity-50" />
+                      </div>
+                      <p className="font-medium">No passkeys created yet.</p>
+                      <p className="text-sm">Create a passkey to allow users to upgrade to company access.</p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-border/50">
+                          <TableHead>Passkey</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Created</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {passkeys.map((passkey) => (
+                          <TableRow key={passkey.id} className="border-border/50 hover:bg-muted/30">
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <code className="bg-muted/50 dark:bg-muted/30 px-3 py-1.5 rounded-lg text-sm font-mono border border-border/50">
+                                  {passkey.passkey}
+                                </code>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 hover:bg-primary/10"
+                                  onClick={() => copyPasskey(passkey.passkey, passkey.id)}
+                                >
+                                  {copiedId === passkey.id ? (
+                                    <Check className="w-4 h-4 text-success" />
+                                  ) : (
+                                    <Copy className="w-4 h-4" />
+                                  )}
+                                </Button>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={passkey.is_active ? "default" : "secondary"}
+                                className={passkey.is_active ? "bg-success/20 text-success border-success/30" : ""}
+                              >
+                                {passkey.is_active ? "Active" : "Disabled"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {new Date(passkey.created_at).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <Switch
+                                  checked={passkey.is_active}
+                                  onCheckedChange={() => togglePasskeyStatus(passkey.id, passkey.is_active)}
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  onClick={() => deletePasskey(passkey.id)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          </TabsContent>
+
+          {/* Users Tab */}
+          <TabsContent value="users" className="space-y-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <Card className="glass-card dark:bg-card/50 dark:border-border/50">
+                <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Key className="w-5 h-5" />
-                    Passkey Management
+                    <Users className="w-5 h-5 text-primary" />
+                    Company Users
                   </CardTitle>
                   <CardDescription>
-                    Create and manage access passkeys for your company
+                    Users who have upgraded using your company passkeys
                   </CardDescription>
-                </div>
-                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Passkey
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Create New Passkey</DialogTitle>
-                      <DialogDescription>
-                        Create a new passkey that users can use to upgrade to company access.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="passkey">Passkey</Label>
-                        <Input
-                          id="passkey"
-                          placeholder="Enter a unique passkey..."
-                          value={newPasskey}
-                          onChange={(e) => setNewPasskey(e.target.value)}
-                        />
+                </CardHeader>
+                <CardContent>
+                  {companyUsers.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted/50 flex items-center justify-center">
+                        <Users className="w-8 h-8 opacity-50" />
                       </div>
+                      <p className="font-medium">No users have upgraded yet.</p>
+                      <p className="text-sm">Share your passkey to allow users to join.</p>
                     </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                        Cancel
-                      </Button>
-                      <Button onClick={handleAddPasskey} disabled={isAddingPasskey || !newPasskey.trim()}>
-                        {isAddingPasskey ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Creating...
-                          </>
-                        ) : (
-                          "Create Passkey"
-                        )}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {passkeys.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Key className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No passkeys created yet.</p>
-                  <p className="text-sm">Create a passkey to allow users to upgrade to company access.</p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Passkey</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {passkeys.map((passkey) => (
-                      <TableRow key={passkey.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <code className="bg-muted px-2 py-1 rounded text-sm font-mono">
-                              {passkey.passkey}
-                            </code>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => copyPasskey(passkey.passkey, passkey.id)}
-                            >
-                              {copiedId === passkey.id ? (
-                                <Check className="w-4 h-4 text-success" />
-                              ) : (
-                                <Copy className="w-4 h-4" />
-                              )}
-                            </Button>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={passkey.is_active ? "default" : "secondary"}>
-                            {passkey.is_active ? "Active" : "Disabled"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {new Date(passkey.created_at).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Switch
-                              checked={passkey.is_active}
-                              onCheckedChange={() => togglePasskeyStatus(passkey.id, passkey.is_active)}
-                            />
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive"
-                              onClick={() => deletePasskey(passkey.id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Company Users */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                Company Users
-              </CardTitle>
-              <CardDescription>
-                Users who have upgraded using your company passkeys
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {companyUsers.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No users have upgraded yet.</p>
-                  <p className="text-sm">Share your passkey to allow users to join.</p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Upgraded At</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {companyUsers.map((cu) => (
-                      <TableRow key={cu.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Mail className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-foreground">{cu.email || "Unknown"}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <Calendar className="w-4 h-4" />
-                            {new Date(cu.upgraded_at).toLocaleString()}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                disabled={revokingUserId === cu.user_id}
-                              >
-                                {revokingUserId === cu.user_id ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <>
-                                    <UserMinus className="w-4 h-4 mr-2" />
-                                    Revoke
-                                  </>
-                                )}
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle className="flex items-center gap-2">
-                                  <AlertTriangle className="w-5 h-5 text-destructive" />
-                                  Revoke Company Access
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to revoke company access for{" "}
-                                  <strong>{cu.email || "this user"}</strong>? They will be 
-                                  downgraded to a common user and lose access to company features.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => revokeUserAccess(cu.user_id, cu.email)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Revoke Access
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-border/50">
+                          <TableHead>Email</TableHead>
+                          <TableHead>Upgraded At</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {companyUsers.map((cu) => (
+                          <TableRow key={cu.id} className="border-border/50 hover:bg-muted/30">
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-full bg-gradient-hero flex items-center justify-center">
+                                  <span className="text-xs font-medium text-primary-foreground">
+                                    {cu.email?.charAt(0).toUpperCase() || "U"}
+                                  </span>
+                                </div>
+                                <span className="text-foreground font-medium">{cu.email || "Unknown"}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <Calendar className="w-4 h-4" />
+                                {new Date(cu.upgraded_at).toLocaleString()}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    disabled={revokingUserId === cu.user_id}
+                                  >
+                                    {revokingUserId === cu.user_id ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      <>
+                                        <UserMinus className="w-4 h-4 mr-2" />
+                                        Revoke
+                                      </>
+                                    )}
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="dark:bg-card dark:border-border/50">
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle className="flex items-center gap-2">
+                                      <AlertTriangle className="w-5 h-5 text-destructive" />
+                                      Revoke Company Access
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to revoke company access for{" "}
+                                      <strong>{cu.email || "this user"}</strong>? They will be 
+                                      downgraded to a common user and lose access to company features.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => revokeUserAccess(cu.user_id, cu.email)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Revoke Access
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
