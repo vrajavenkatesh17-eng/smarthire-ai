@@ -69,46 +69,55 @@
   }
 
   .dark {
-    --background: 220 13% 8%;
-    --foreground: 0 0% 98%;
+    /* Premium dark mode - Deep space aesthetic like examai */
+    --background: 222 47% 5%;
+    --foreground: 210 40% 98%;
 
-    --card: 220 13% 10%;
-    --card-foreground: 0 0% 98%;
+    --card: 222 47% 7%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 220 13% 10%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 222 47% 7%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 221 83% 60%;
-    --primary-foreground: 0 0% 100%;
-    --primary-hover: 221 83% 65%;
+    /* Primary - Vibrant blue with glow */
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47% 5%;
+    --primary-hover: 217 91% 70%;
 
-    --secondary: 220 13% 15%;
-    --secondary-foreground: 0 0% 98%;
+    /* Secondary - Rich dark surfaces */
+    --secondary: 222 47% 11%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 220 13% 15%;
-    --muted-foreground: 220 9% 60%;
+    --muted: 222 47% 11%;
+    --muted-foreground: 215 20% 55%;
 
-    --accent: 262 83% 65%;
-    --accent-foreground: 0 0% 100%;
+    /* Accent - Electric purple */
+    --accent: 270 91% 65%;
+    --accent-foreground: 222 47% 5%;
 
-    --success: 142 71% 50%;
-    --success-foreground: 0 0% 100%;
+    /* Success - Vibrant green */
+    --success: 142 76% 55%;
+    --success-foreground: 222 47% 5%;
 
-    --destructive: 0 62.8% 50%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 220 13% 20%;
-    --input: 220 13% 20%;
-    --ring: 221 83% 60%;
+    --border: 222 47% 15%;
+    --input: 222 47% 15%;
+    --ring: 217 91% 60%;
 
-    --sidebar-background: 220 13% 8%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 221 83% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 13% 15%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 220 13% 20%;
-    --sidebar-ring: 221 83% 60%;
+    /* Dark mode shadows with glow */
+    --shadow-glow: 0 0 60px hsl(217 91% 60% / 0.2);
+
+    /* Sidebar dark mode */
+    --sidebar-background: 222 47% 5%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 222 47% 5%;
+    --sidebar-accent: 222 47% 11%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 222 47% 15%;
+    --sidebar-ring: 217 91% 60%;
   }
 }
 
@@ -159,6 +168,63 @@
 
   .animate-pulse-slow {
     animation: pulse 3s ease-in-out infinite;
+  }
+
+  /* Glass morphism effect for dark mode */
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50;
+  }
+
+  .dark .glass-card {
+    @apply bg-card/40 backdrop-blur-xl border border-border/30;
+    box-shadow: 0 8px 32px 0 hsl(217 91% 60% / 0.05), inset 0 1px 0 0 hsl(0 0% 100% / 0.05);
+  }
+
+  /* Glow effects */
+  .glow-primary {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3), 0 0 40px hsl(var(--primary) / 0.1);
+  }
+
+  .dark .glow-primary {
+    box-shadow: 0 0 30px hsl(var(--primary) / 0.4), 0 0 60px hsl(var(--primary) / 0.2);
+  }
+
+  .glow-accent {
+    box-shadow: 0 0 20px hsl(var(--accent) / 0.3), 0 0 40px hsl(var(--accent) / 0.1);
+  }
+
+  .dark .glow-accent {
+    box-shadow: 0 0 30px hsl(var(--accent) / 0.4), 0 0 60px hsl(var(--accent) / 0.2);
+  }
+
+  /* Gradient borders */
+  .gradient-border {
+    position: relative;
+    background: hsl(var(--card));
+    border-radius: var(--radius);
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  /* Noise texture overlay for dark mode */
+  .dark .noise-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    pointer-events: none;
   }
 }
 
@@ -275,22 +341,44 @@
   }
 }
 
-/* Scrollbar styling */
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Enhanced scrollbar styling for dark mode */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-muted;
+  @apply bg-muted/50;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: hsl(222 47% 8%);
 }
 
 ::-webkit-scrollbar-thumb {
   @apply bg-muted-foreground/20 rounded-full;
 }
 
+.dark ::-webkit-scrollbar-thumb {
+  background: hsl(217 91% 60% / 0.3);
+  border-radius: 4px;
+}
+
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-muted-foreground/30;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: hsl(217 91% 60% / 0.5);
 }
 
 /* Premium hover effects */
@@ -303,12 +391,20 @@
   box-shadow: 0 20px 40px -10px hsl(var(--primary) / 0.15);
 }
 
+.dark .hover-lift:hover {
+  box-shadow: 0 20px 40px -10px hsl(var(--primary) / 0.3);
+}
+
 .hover-glow {
   @apply transition-all duration-300;
 }
 
 .hover-glow:hover {
   box-shadow: 0 0 30px hsl(var(--primary) / 0.2);
+}
+
+.dark .hover-glow:hover {
+  box-shadow: 0 0 40px hsl(var(--primary) / 0.4);
 }
 
 .magnetic-hover {
@@ -326,6 +422,12 @@
 /* Shimmer effect */
 .shimmer {
   background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.1), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+.dark .shimmer {
+  background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.2), transparent);
   background-size: 200% 100%;
   animation: shimmer 2s infinite;
 }
@@ -359,4 +461,110 @@
 
 .card-3d:hover {
   transform: translateY(-5px) rotateX(2deg);
+}
+
+/* Dark mode specific enhancements */
+.dark .feature-card {
+  @apply bg-gradient-to-br from-card to-muted/50 border-border/30;
+  box-shadow: 
+    0 4px 6px -1px hsl(0 0% 0% / 0.3),
+    0 2px 4px -2px hsl(0 0% 0% / 0.2),
+    inset 0 1px 0 0 hsl(0 0% 100% / 0.05);
+}
+
+.dark .feature-card:hover {
+  box-shadow: 
+    0 20px 40px -10px hsl(var(--primary) / 0.2),
+    0 8px 16px -4px hsl(0 0% 0% / 0.3),
+    inset 0 1px 0 0 hsl(0 0% 100% / 0.1);
+}
+
+/* Glowing orbs for background decoration */
+.dark .glow-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.dark .glow-orb-primary {
+  background: hsl(var(--primary));
+}
+
+.dark .glow-orb-accent {
+  background: hsl(var(--accent));
+}
+
+/* Input focus states for dark mode */
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.3), 0 0 20px hsl(var(--primary) / 0.1);
+}
+
+/* Button glow effect */
+.dark .btn-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+.dark .btn-glow::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+  filter: blur(8px);
+}
+
+.dark .btn-glow:hover::before {
+  opacity: 0.5;
+}
+
+/* Table styling for dark mode */
+.dark table {
+  @apply border-border/30;
+}
+
+.dark th {
+  @apply bg-muted/30 text-muted-foreground;
+}
+
+.dark tr:hover {
+  @apply bg-muted/20;
+}
+
+/* Dialog/Modal styling for dark mode */
+.dark [role="dialog"] {
+  @apply bg-card/95 backdrop-blur-xl border-border/30;
+  box-shadow: 
+    0 25px 50px -12px hsl(0 0% 0% / 0.5),
+    0 0 100px hsl(var(--primary) / 0.1);
+}
+
+/* Badge glow for dark mode */
+.dark .badge-glow {
+  box-shadow: 0 0 10px currentColor;
+}
+
+/* Stat card animations */
+.stat-card {
+  @apply transition-all duration-500;
+}
+
+.stat-card:hover {
+  @apply scale-[1.02];
+}
+
+.dark .stat-card {
+  background: linear-gradient(145deg, hsl(222 47% 9%), hsl(222 47% 7%));
+}
+
+.dark .stat-card:hover {
+  background: linear-gradient(145deg, hsl(222 47% 11%), hsl(222 47% 9%));
+  box-shadow: 0 0 30px hsl(var(--primary) / 0.15);
 }

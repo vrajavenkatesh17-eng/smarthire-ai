@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -20,18 +21,15 @@ const escapeHtml = (text: string): string => {
 };
 
 // In-memory rate limiting store (resets on function cold start)
-// For production, consider using Deno KV or Upstash Redis
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 
-const RATE_LIMIT_MAX_REQUESTS = 5; // Max requests per window
-const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour window
+const RATE_LIMIT_MAX_REQUESTS = 5;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 
-// Rate limiting function
 const checkRateLimit = (clientIp: string): { allowed: boolean; remaining: number; resetIn: number } => {
   const now = Date.now();
   const entry = rateLimitStore.get(clientIp);
 
-  // Clean up expired entries periodically
   if (rateLimitStore.size > 1000) {
     for (const [key, value] of rateLimitStore.entries()) {
       if (now > value.resetTime) {
@@ -41,7 +39,6 @@ const checkRateLimit = (clientIp: string): { allowed: boolean; remaining: number
   }
 
   if (!entry || now > entry.resetTime) {
-    // Create new entry or reset expired entry
     rateLimitStore.set(clientIp, {
       count: 1,
       resetTime: now + RATE_LIMIT_WINDOW_MS,
@@ -53,13 +50,11 @@ const checkRateLimit = (clientIp: string): { allowed: boolean; remaining: number
     return { allowed: false, remaining: 0, resetIn: entry.resetTime - now };
   }
 
-  // Increment count
   entry.count++;
   rateLimitStore.set(clientIp, entry);
   return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - entry.count, resetIn: entry.resetTime - now };
 };
 
-// Get client IP from request headers
 const getClientIp = (req: Request): string => {
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) {
@@ -77,21 +72,17 @@ interface ContactEmailRequest {
   email: string;
   subject?: string;
   message: string;
-  // Honeypot field - should be empty if submitted by a human
   website?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Get client IP for rate limiting
     const clientIp = getClientIp(req);
     
-    // Check rate limit
     const rateLimit = checkRateLimit(clientIp);
     if (!rateLimit.allowed) {
       console.warn(`Rate limit exceeded for IP: ${clientIp}`);
@@ -115,10 +106,9 @@ const handler = async (req: Request): Promise<Response> => {
     
     const { name, email, subject, message, website }: ContactEmailRequest = await req.json();
 
-    // Honeypot check - if website field is filled, it's likely a bot
+    // Honeypot check
     if (website && website.trim() !== "") {
       console.warn(`Honeypot triggered by IP: ${clientIp}`);
-      // Return success to not reveal the honeypot to bots
       return new Response(
         JSON.stringify({ success: true, message: "Message received" }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -134,7 +124,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Validate input lengths to prevent abuse
+    // Validate input lengths
     if (name.length > 100 || email.length > 255 || (subject && subject.length > 200) || message.length > 5000) {
       return new Response(
         JSON.stringify({ error: "Input exceeds maximum allowed length" }),
@@ -152,12 +142,44 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Save to admin_notifications table for all company admins
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get all company admins to notify them
+    const { data: admins, error: adminsError } = await supabase
+      .from("company_admins")
+      .select("id");
+
+    if (!adminsError && admins && admins.length > 0) {
+      // Create notification for each admin
+      const notifications = admins.map(admin => ({
+        admin_id: admin.id,
+        sender_name: name,
+        sender_email: email,
+        subject: subject || "General Inquiry",
+        message: message,
+        status: "unread",
+      }));
+
+      const { error: insertError } = await supabase
+        .from("admin_notifications")
+        .insert(notifications);
+
+      if (insertError) {
+        console.error("Error saving notification:", insertError);
+      } else {
+        console.log(`Created ${notifications.length} admin notifications`);
+      }
+    }
+
     console.log(`Sending contact notification email (IP: ${clientIp}, remaining: ${rateLimit.remaining})...`);
 
     // Send notification email to the team
     const notificationResponse = await resend.emails.send({
       from: "ResumeAI Contact <onboarding@resend.dev>",
-      to: ["hello@resumeai.com"], // Replace with actual team email
+      to: ["hello@resumeai.com"],
       subject: `New Contact Form: ${escapeHtml(subject || "General Inquiry")}`,
       html: `
         <!DOCTYPE html>
@@ -166,12 +188,12 @@ const handler = async (req: Request): Promise<Response> => {
           <style>
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #8B5CF6, #D946EF); color: white; padding: 30px; border-radius: 12px 12px 0 0; }
+            .header { background: linear-gradient(135deg, #3B82F6, #8B5CF6); color: white; padding: 30px; border-radius: 12px 12px 0 0; }
             .content { background: #f9fafb; padding: 30px; border-radius: 0 0 12px 12px; }
             .field { margin-bottom: 20px; }
             .label { font-weight: 600; color: #6b7280; font-size: 12px; text-transform: uppercase; margin-bottom: 5px; }
             .value { font-size: 16px; color: #111; }
-            .message-box { background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #8B5CF6; }
+            .message-box { background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #3B82F6; }
           </style>
         </head>
         <body>
@@ -213,7 +235,7 @@ const handler = async (req: Request): Promise<Response> => {
           <style>
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #8B5CF6, #D946EF); color: white; padding: 40px; border-radius: 12px 12px 0 0; text-align: center; }
+            .header { background: linear-gradient(135deg, #3B82F6, #8B5CF6); color: white; padding: 40px; border-radius: 12px 12px 0 0; text-align: center; }
             .content { background: #f9fafb; padding: 30px; border-radius: 0 0 12px 12px; }
             .footer { text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }
           </style>
