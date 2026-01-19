@@ -7,11 +7,21 @@ import {
   Building2,
   Calendar,
   BarChart3,
-  Activity
+  Activity,
+  Download,
+  FileDown
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { exportAnalyticsToCSV, exportAnalyticsToPDF } from "@/lib/analyticsExport";
 import {
   AreaChart,
   Area,
@@ -137,6 +147,28 @@ const AdminAnalyticsDashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Export Actions */}
+      <div className="flex justify-end">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2">
+              <Download className="h-4 w-4" />
+              Export Analytics
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => exportAnalyticsToCSV(analytics)} className="gap-2 cursor-pointer">
+              <FileDown className="h-4 w-4" />
+              Export as CSV
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => exportAnalyticsToPDF(analytics)} className="gap-2 cursor-pointer">
+              <FileText className="h-4 w-4" />
+              Export as PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
       {/* Metric Cards */}
       <motion.div 
         initial="hidden"
