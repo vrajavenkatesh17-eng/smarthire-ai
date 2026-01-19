@@ -13,7 +13,7 @@ import Footer from "@/components/layout/Footer";
 
 const creators = [
   {
-    name: "Krishna Raja V",
+    name: "Selva Kumaran",
     role: "Full Stack Developer",
     bio: "Passionate about building AI-powered solutions that transform HR workflows and make hiring smarter.",
     avatar: "KR",
