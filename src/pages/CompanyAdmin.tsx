@@ -16,11 +16,13 @@ import {
   UserMinus,
   AlertTriangle,
   BarChart3,
-  Bell
+  Bell,
+  FileText
 } from "lucide-react";
 import OnboardingWizard from "@/components/OnboardingWizard";
 import AdminAnalyticsDashboard from "@/components/AdminAnalyticsDashboard";
 import AdminNotificationsPanel from "@/components/AdminNotificationsPanel";
+import AdminEmailTemplates from "@/components/AdminEmailTemplates";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -443,7 +445,7 @@ const CompanyAdmin = () => {
 
       <main className="container mx-auto px-6 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full max-w-lg grid-cols-4 bg-muted/50 dark:bg-muted/30 p-1">
+          <TabsList className="grid w-full max-w-2xl grid-cols-5 bg-muted/50 dark:bg-muted/30 p-1">
             <TabsTrigger value="analytics" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
               <BarChart3 className="w-4 h-4" />
               <span className="hidden sm:inline">Analytics</span>
@@ -451,6 +453,10 @@ const CompanyAdmin = () => {
             <TabsTrigger value="notifications" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
               <Bell className="w-4 h-4" />
               <span className="hidden sm:inline">Inbox</span>
+            </TabsTrigger>
+            <TabsTrigger value="templates" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <FileText className="w-4 h-4" />
+              <span className="hidden sm:inline">Templates</span>
             </TabsTrigger>
             <TabsTrigger value="passkeys" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
               <Key className="w-4 h-4" />
@@ -470,6 +476,11 @@ const CompanyAdmin = () => {
           {/* Notifications Tab */}
           <TabsContent value="notifications" className="space-y-6">
             <AdminNotificationsPanel />
+          </TabsContent>
+
+          {/* Email Templates Tab */}
+          <TabsContent value="templates" className="space-y-6">
+            <AdminEmailTemplates />
           </TabsContent>
 
           {/* Passkeys Tab */}
