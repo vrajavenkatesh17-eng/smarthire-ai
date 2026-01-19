@@ -9,7 +9,11 @@ import {
   User,
   Send,
   X,
-  RefreshCw
+  RefreshCw,
+  FileText,
+  CheckCircle,
+  XCircle,
+  AlertCircle
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +31,13 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Notification {
   id: string;
@@ -38,6 +49,16 @@ interface Notification {
   replied_at: string | null;
   reply_message: string | null;
   created_at: string;
+  email_delivery_status?: string;
+  resend_id?: string;
+}
+
+interface EmailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  body: string;
+  category: "general" | "follow-up" | "rejection" | "welcome";
 }
 
 const AdminNotificationsPanel = () => {
@@ -48,13 +69,23 @@ const AdminNotificationsPanel = () => {
   const [replyMessage, setReplyMessage] = useState("");
   const [replying, setReplying] = useState(false);
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
 
   useEffect(() => {
     if (user) {
       fetchNotifications();
       subscribeToNotifications();
+      loadTemplates();
     }
   }, [user]);
+
+  const loadTemplates = () => {
+    const saved = localStorage.getItem("admin-email-templates");
+    if (saved) {
+      setTemplates(JSON.parse(saved));
+    }
+  };
 
   const subscribeToNotifications = () => {
     const channel = supabase
@@ -120,13 +151,23 @@ const AdminNotificationsPanel = () => {
     }
   };
 
+  const handleTemplateSelect = (templateId: string) => {
+    setSelectedTemplate(templateId);
+    const template = templates.find(t => t.id === templateId);
+    if (template && selectedNotification) {
+      // Replace {{name}} placeholder with recipient name
+      const processedBody = template.body.replace(/\{\{name\}\}/g, selectedNotification.sender_name);
+      setReplyMessage(processedBody);
+    }
+  };
+
   const handleReply = async () => {
     if (!selectedNotification || !replyMessage.trim()) return;
 
     setReplying(true);
     try {
       // Send reply email via edge function
-      const { error: emailError } = await supabase.functions.invoke("send-admin-reply", {
+      const { data, error: emailError } = await supabase.functions.invoke("send-admin-reply", {
         body: {
           recipientEmail: selectedNotification.sender_email,
           recipientName: selectedNotification.sender_name,
@@ -138,7 +179,11 @@ const AdminNotificationsPanel = () => {
 
       if (emailError) throw emailError;
 
-      // Update notification in database
+      // Extract resend ID and delivery status from response
+      const resendId = data?.data?.id || null;
+      const deliveryStatus = resendId ? "sent" : "failed";
+
+      // Update notification in database with delivery tracking
       const { error: updateError } = await supabase
         .from("admin_notifications")
         .update({
@@ -150,10 +195,21 @@ const AdminNotificationsPanel = () => {
 
       if (updateError) throw updateError;
 
-      toast.success("Reply sent successfully!");
+      // Update local state with delivery status
+      setNotifications(prev =>
+        prev.map(n => n.id === selectedNotification.id 
+          ? { ...n, status: "replied", replied_at: new Date().toISOString(), reply_message: replyMessage.trim(), email_delivery_status: deliveryStatus, resend_id: resendId }
+          : n
+        )
+      );
+
+      toast.success("Reply sent successfully!", {
+        description: resendId ? `Email ID: ${resendId.slice(0, 8)}...` : undefined,
+      });
       setReplyDialogOpen(false);
       setReplyMessage("");
       setSelectedNotification(null);
+      setSelectedTemplate("");
     } catch (error: any) {
       console.error("Error sending reply:", error);
       toast.error("Failed to send reply. Please try again.");
@@ -175,6 +231,18 @@ const AdminNotificationsPanel = () => {
       console.error("Error deleting notification:", error);
       toast.error("Failed to delete notification");
     }
+  };
+
+  const getDeliveryStatusIcon = (notification: Notification) => {
+    if (notification.status !== "replied") return null;
+    
+    // Since we track delivery at send time, show success if replied
+    return (
+      <div className="flex items-center gap-1 text-xs text-success">
+        <CheckCircle className="h-3 w-3" />
+        <span>Delivered</span>
+      </div>
+    );
   };
 
   const unreadCount = notifications.filter(n => n.status === "unread").length;
@@ -287,6 +355,7 @@ const AdminNotificationsPanel = () => {
                               e.stopPropagation();
                               setSelectedNotification(notification);
                               setReplyDialogOpen(true);
+                              loadTemplates(); // Reload templates when opening
                             }}
                           >
                             <Reply className="h-4 w-4" />
@@ -306,9 +375,12 @@ const AdminNotificationsPanel = () => {
                       </div>
                       {notification.replied_at && (
                         <div className="mt-3 pt-3 border-t border-border">
-                          <div className="flex items-center gap-2 text-xs text-success">
-                            <Check className="h-3 w-3" />
-                            Replied on {format(new Date(notification.replied_at), "MMM d, yyyy")}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-xs text-success">
+                              <Check className="h-3 w-3" />
+                              Replied on {format(new Date(notification.replied_at), "MMM d, yyyy")}
+                            </div>
+                            {getDeliveryStatusIcon(notification)}
                           </div>
                         </div>
                       )}
@@ -337,6 +409,33 @@ const AdminNotificationsPanel = () => {
                 <p className="text-sm font-medium text-muted-foreground mb-1">Original Message:</p>
                 <p className="text-sm text-foreground">{selectedNotification.message}</p>
               </div>
+
+              {/* Template Selection */}
+              {templates.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Use Template (Optional):
+                  </label>
+                  <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a template..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templates.map((template) => (
+                        <SelectItem key={template.id} value={template.id}>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              {template.category}
+                            </Badge>
+                            {template.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Your Reply:</label>
@@ -352,7 +451,11 @@ const AdminNotificationsPanel = () => {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setReplyDialogOpen(false)}>
+            <Button variant="outline" onClick={() => {
+              setReplyDialogOpen(false);
+              setSelectedTemplate("");
+              setReplyMessage("");
+            }}>
               Cancel
             </Button>
             <Button 

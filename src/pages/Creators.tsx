@@ -16,64 +16,59 @@ const creators = [
     name: "Selva Kumaran",
     role: "Full Stack Developer",
     bio: "Passionate about building AI-powered solutions that transform HR workflows and make hiring smarter.",
-    avatar: "KR",
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face",
+    avatar: "S",
     icon: Code,
     color: "from-violet-500 to-purple-600",
     skills: ["React", "TypeScript", "AI/ML", "Supabase"],
-    email: "raja@resumeai.com",
+    email: "selva@resumeai.com",
     linkedin: "#",
     github: "#",
   },
   {
-    name: "Alex Chen",
+    name: "Krishna Raja",
     role: "UI/UX Designer",
     bio: "Creating intuitive and beautiful user experiences that make complex HR tasks feel effortless.",
-    avatar: "AC",
-    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&crop=face",
+    avatar: "K",
     icon: Palette,
     color: "from-pink-500 to-rose-600",
     skills: ["Figma", "UI Design", "User Research", "Prototyping"],
-    email: "alex@resumeai.com",
+    email: "krishna@resumeai.com",
     linkedin: "#",
     github: "#",
   },
   {
-    name: "Sam Wilson",
+    name: "Saravanan Karkuvel",
     role: "Backend Engineer",
     bio: "Building robust and scalable infrastructure to power intelligent resume analysis at scale.",
-    avatar: "SW",
-    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face",
+    avatar: "S",
     icon: Database,
     color: "from-blue-500 to-cyan-600",
     skills: ["Node.js", "PostgreSQL", "APIs", "Cloud"],
-    email: "sam@resumeai.com",
+    email: "saravanan@resumeai.com",
     linkedin: "#",
     github: "#",
   },
   {
-    name: "Priya Sharma",
+    name: "Mari Shakthivel",
     role: "AI/ML Engineer",
     bio: "Developing intelligent algorithms that power our resume matching and candidate scoring systems.",
-    avatar: "PS",
-    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop&crop=face",
+    avatar: "M",
     icon: Sparkles,
     color: "from-emerald-500 to-teal-600",
     skills: ["Python", "TensorFlow", "NLP", "Machine Learning"],
-    email: "priya@resumeai.com",
+    email: "mari@resumeai.com",
     linkedin: "#",
     github: "#",
   },
   {
-    name: "David Park",
+    name: "Aathi Sudhan",
     role: "Product Manager",
     bio: "Bridging the gap between user needs and technology to deliver impactful HR solutions.",
-    avatar: "DP",
-    image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=400&fit=crop&crop=face",
+    avatar: "A",
     icon: Rocket,
     color: "from-orange-500 to-amber-600",
     skills: ["Strategy", "Agile", "User Research", "Analytics"],
-    email: "david@resumeai.com",
+    email: "aathi@resumeai.com",
     linkedin: "#",
     github: "#",
   },
@@ -296,15 +291,11 @@ const Creators = () => {
                     {/* Avatar & Icon */}
                     <div className="flex items-start justify-between mb-6">
                       <motion.div 
-                        className={`w-20 h-20 rounded-3xl overflow-hidden shadow-xl relative ring-4 ring-background`}
+                        className={`w-20 h-20 rounded-3xl overflow-hidden shadow-xl relative ring-4 ring-background bg-gradient-to-br ${creator.color} flex items-center justify-center`}
                         whileHover={{ scale: 1.1, rotate: 5 }}
                         transition={{ type: "spring", stiffness: 300 }}
                       >
-                        <img 
-                          src={creator.image} 
-                          alt={creator.name}
-                          className="w-full h-full object-cover"
-                        />
+                        <span className="text-3xl font-bold text-white">{creator.avatar}</span>
                         <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-background border-2 border-background flex items-center justify-center`}>
                           <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
                         </div>
