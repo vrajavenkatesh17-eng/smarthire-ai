@@ -1,3 +1,4 @@
+import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/layout/Navbar";
 import Hero from "@/components/sections/Hero";
 import Features from "@/components/sections/Features";
@@ -6,9 +7,12 @@ import Stats from "@/components/sections/Stats";
 import Demo from "@/components/sections/Demo";
 import Pricing from "@/components/sections/Pricing";
 import CTA from "@/components/sections/CTA";
+import PasskeyRequestSection from "@/components/PasskeyRequestSection";
 import Footer from "@/components/layout/Footer";
 
 const Index = () => {
+  const { user } = useAuth();
+
   return (
     <main className="min-h-screen bg-background">
       <Navbar />
@@ -18,6 +22,8 @@ const Index = () => {
       <Stats />
       <Demo />
       <Pricing />
+      {/* Show passkey request section only for non-authenticated users or common users */}
+      {!user && <PasskeyRequestSection />}
       <CTA />
       <Footer />
     </main>

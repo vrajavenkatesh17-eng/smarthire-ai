@@ -17,12 +17,14 @@ import {
   AlertTriangle,
   BarChart3,
   Bell,
-  FileText
+  FileText,
+  TrendingUp
 } from "lucide-react";
 import OnboardingWizard from "@/components/OnboardingWizard";
 import AdminAnalyticsDashboard from "@/components/AdminAnalyticsDashboard";
 import AdminNotificationsPanel from "@/components/AdminNotificationsPanel";
 import AdminEmailTemplates from "@/components/AdminEmailTemplates";
+import HiringFunnelDashboard from "@/components/HiringFunnelDashboard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -445,10 +447,14 @@ const CompanyAdmin = () => {
 
       <main className="container mx-auto px-6 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-5 bg-muted/50 dark:bg-muted/30 p-1">
+          <TabsList className="grid w-full max-w-3xl grid-cols-6 bg-muted/50 dark:bg-muted/30 p-1">
             <TabsTrigger value="analytics" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
               <BarChart3 className="w-4 h-4" />
               <span className="hidden sm:inline">Analytics</span>
+            </TabsTrigger>
+            <TabsTrigger value="funnel" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <TrendingUp className="w-4 h-4" />
+              <span className="hidden sm:inline">Funnel</span>
             </TabsTrigger>
             <TabsTrigger value="notifications" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
               <Bell className="w-4 h-4" />
@@ -471,6 +477,11 @@ const CompanyAdmin = () => {
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-6">
             <AdminAnalyticsDashboard />
+          </TabsContent>
+
+          {/* Hiring Funnel Tab */}
+          <TabsContent value="funnel" className="space-y-6">
+            <HiringFunnelDashboard />
           </TabsContent>
 
           {/* Notifications Tab */}

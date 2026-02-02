@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles, Brain, Zap, ChevronDown } from "lucide-react";
+import { ArrowRight, Sparkles, Brain, Zap, ChevronDown, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 const clientLogos = [
   { name: "Google", letter: "G" },
@@ -37,9 +38,12 @@ const itemVariants = {
 const Hero = () => {
   const [email, setEmail] = useState("");
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const handleGetStarted = () => {
-    if (email.trim()) {
+    if (user) {
+      navigate("/resume-analyzer");
+    } else if (email.trim()) {
       navigate(`/auth?mode=signup&email=${encodeURIComponent(email.trim())}`);
     } else {
       navigate("/auth?mode=signup");
@@ -124,34 +128,70 @@ const Hero = () => {
             candidate matching, and HR workflows. <span className="text-primary">From startups to enterprises.</span>
           </motion.p>
 
-          {/* CTA Section */}
+          {/* CTA Section - Different for logged in vs logged out users */}
           <motion.div
             variants={itemVariants}
             className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
           >
-            <motion.div 
-              className="flex items-center w-full sm:w-auto"
-              whileHover={{ scale: 1.02 }}
-              transition={{ type: "spring", stiffness: 400 }}
-            >
-              <Input
-                type="email"
-                placeholder="Enter your work email..."
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleGetStarted()}
-                className="w-full sm:w-72 h-12 rounded-l-xl rounded-r-none border-r-0 transition-shadow focus:shadow-lg"
-              />
-              <Button 
-                variant="hero" 
-                size="lg" 
-                className="rounded-l-none rounded-r-xl group"
-                onClick={handleGetStarted}
+            {user ? (
+              // Logged in user - show direct action buttons
+              <div className="flex flex-col sm:flex-row items-center gap-4">
+                <motion.div 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button 
+                    variant="hero" 
+                    size="lg" 
+                    className="group text-lg px-8"
+                    onClick={() => navigate("/resume-analyzer")}
+                  >
+                    <Sparkles className="w-5 h-5 mr-2" />
+                    Analyze Resume
+                    <ArrowRight className="w-5 h-5 ml-2 transition-transform group-hover:translate-x-1" />
+                  </Button>
+                </motion.div>
+                <motion.div 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button 
+                    variant="outline" 
+                    size="lg" 
+                    className="group"
+                    onClick={() => navigate("/dashboard")}
+                  >
+                    <LayoutDashboard className="w-5 h-5 mr-2" />
+                    Go to Dashboard
+                  </Button>
+                </motion.div>
+              </div>
+            ) : (
+              // Logged out user - show email signup
+              <motion.div 
+                className="flex items-center w-full sm:w-auto"
+                whileHover={{ scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 400 }}
               >
-                Get Started
-                <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
-              </Button>
-            </motion.div>
+                <Input
+                  type="email"
+                  placeholder="Enter your work email..."
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleGetStarted()}
+                  className="w-full sm:w-72 h-12 rounded-l-xl rounded-r-none border-r-0 transition-shadow focus:shadow-lg"
+                />
+                <Button 
+                  variant="hero" 
+                  size="lg" 
+                  className="rounded-l-none rounded-r-xl group"
+                  onClick={handleGetStarted}
+                >
+                  Get Started
+                  <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </motion.div>
+            )}
           </motion.div>
 
           {/* Trust Badges with stagger animation */}

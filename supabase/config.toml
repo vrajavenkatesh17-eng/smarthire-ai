@@ -26,3 +26,15 @@ verify_jwt = false
 
 [functions.validate-passkey]
 verify_jwt = false
+
+[functions.send-passkey-request]
+verify_jwt = false
+
+[functions.send-admin-reply]
+verify_jwt = false
+
+[functions.send-upgrade-notification]
+verify_jwt = false
+
+[functions.send-weekly-analytics]
+verify_jwt = false
